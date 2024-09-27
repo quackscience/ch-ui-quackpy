@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { MetricItem } from "@/lib/metricsConfig";
 import useTabStore from "@/stores/tabs.store";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  Area,
+  AreaChart,
+  Pie,
+  PieChart,
+  Radar,
+  RadarChart,
+  RadialBar,
+  RadialBarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Cell,
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -47,7 +61,7 @@ function MetricItemComponent({ item }: Props) {
 
   if (loading) {
     return (
-      <Card className="p-4">
+      <Card className="p-4 col-span-1">
         <CardContent>Loading {item.title}...</CardContent>
       </Card>
     );
@@ -87,42 +101,116 @@ function MetricItemComponent({ item }: Props) {
   };
 
   const renderChart = () => {
-    if (!data || !data.data || data.data.length === 0) {
+    if (!data || !data.data || data.data.length === 0 || !item.chartConfig) {
       return "No data available for chart";
     }
 
-    const chartConfig = {
-      [item.chartConfig.dataKey as string]: {
-        label:
-          typeof item.chartConfig.label === "string"
-            ? item.chartConfig.label
-            : formatKey(item.chartConfig.dataKey),
-        color: item.chartConfig.color || "hsl(var(--chart-1))",
-        theme: item.chartConfig.theme || {
-          light: "hsl(var(--chart-1))",
-          dark: "hsl(var(--chart-2))",
-        },
-      },
-    };
+    let ChartComponent;
+    let DataComponent;
+
+    switch (item.chartType) {
+      case "line":
+        ChartComponent = LineChart;
+        DataComponent = Line;
+        break;
+      case "area":
+        ChartComponent = AreaChart;
+        DataComponent = Area;
+        break;
+      case "pie":
+        ChartComponent = PieChart;
+        DataComponent = Pie;
+        break;
+      case "radar":
+        ChartComponent = RadarChart;
+        DataComponent = Radar;
+        break;
+      case "radial":
+        ChartComponent = RadialBarChart;
+        DataComponent = RadialBar;
+        break;
+      case "bar":
+      default:
+        ChartComponent = BarChart;
+        DataComponent = Bar;
+    }
+
+    const dataKey = Object.keys(item.chartConfig).find(
+      (key) => key !== "indexBy"
+    );
+    const maxValue = Math.max(
+      ...data.data.map((d: any) => d[dataKey as string])
+    );
+    const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding to the top
 
     return (
-      <ChartContainer config={chartConfig} className="mt-4 h-[300px]">
-        <BarChart data={data.data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey={(item.chartConfig.xAxisKey as string) || "day"}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis tickLine={false} axisLine={false} />
+      <ChartContainer
+        config={item.chartConfig}
+        className="mt-4 h-[300px] w-full"
+      >
+        <ChartComponent
+          data={data.data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          {["bar", "line", "area"].includes(item.chartType as string) && (
+            <>
+              <CartesianGrid strokeDasharray="3 3" vertical={true} />
+              <XAxis
+                dataKey={item.chartConfig.indexBy as string}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => value.toString().slice(0, 10)}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+                width={40}
+                domain={[0, yAxisMax]}
+                allowDataOverflow={false}
+              />
+            </>
+          )}
+          {item.chartType === "radar" && (
+            <>
+              <PolarGrid />
+              <PolarAngleAxis dataKey={item.chartConfig.indexBy as string} />
+              <PolarRadiusAxis />
+            </>
+          )}
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
-          <Bar
-            dataKey={item.chartConfig.dataKey as string}
-            fill={`var(--color-${item.chartConfig.dataKey})`}
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
+          {Object.keys(item.chartConfig)
+            .filter((key) => key !== "indexBy")
+            .map((key) => (
+              <DataComponent
+                key={key}
+                dataKey={key}
+                fill={`var(--color-${key})`}
+                stroke={`var(--color-${key})`}
+                strokeWidth={2}
+                dot={false}
+                radius={item.chartType === "bar" ? [4, 4, 0, 0] : undefined}
+                fillOpacity={item.chartType === "area" ? 0.3 : 1}
+                {...(item.chartType === "pie" || item.chartType === "radial"
+                  ? {
+                      data: data.data,
+                      nameKey: item.chartConfig?.indexBy as string,
+                      label: true,
+                    }
+                  : {})}
+              >
+                {(item.chartType === "pie" || item.chartType === "radial") &&
+                  data.data.map((_: any, index: number) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={`var(--color-${index + 1})`}
+                    />
+                  ))}
+              </DataComponent>
+            ))}
+        </ChartComponent>
       </ChartContainer>
     );
   };
@@ -160,10 +248,9 @@ function MetricItemComponent({ item }: Props) {
   };
 
   return (
-    <Card>
+    <Card className={`h-full col-span-${item.tiles || 4}`}>
       <CardHeader>
         <CardTitle>{item.title}</CardTitle>
-        <CardDescription>{item.description}</CardDescription>
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>
