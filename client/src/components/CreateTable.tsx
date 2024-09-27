@@ -15,7 +15,7 @@ import useTabStore from "@/stores/tabs.store";
 import ConfirmationDialog from "@/components/createTable/ConfirmationDialog";
 import ManualCreationForm from "@/components/createTable/ManualCreationForm";
 import FileUploadForm from "@/components/createTable/FileUploadForm";
-import GeneratedSQL from "@/components/createTable/GeneratedSQL";
+import { add } from "date-fns";
 
 const TIME_FIELDS = ["Date", "DateTime"];
 
@@ -47,16 +47,7 @@ const CreateTable = () => {
   const [database, setDatabase] = useState("");
   const [tableName, setTableName] = useState("");
   const [engine, setEngine] = useState("MergeTree");
-  const [fields, setFields] = useState<Field[]>([
-    {
-      name: "",
-      type: "String",
-      nullable: false,
-      isPrimaryKey: false,
-      isOrderBy: false,
-      isPartitionBy: false,
-    },
-  ]);
+  const [fields, setFields] = useState<Field[]>([]);
   const [primaryKeyFields, setPrimaryKeyFields] = useState<string[]>([]);
   const [orderByFields, setOrderByFields] = useState<string[]>([]);
   const [partitionByField, setPartitionByField] = useState<string | null>(null);
@@ -81,7 +72,7 @@ const CreateTable = () => {
 
   // Nested JSON Handling
   const [flattenJSON, setFlattenJSON] = useState<boolean>(true);
-  const [jsonNestedPaths, setJsonNestedPaths] = useState<string[]>([]); // Example: ["address.street", "user.age"]
+  const [jsonNestedPaths, setJsonNestedPaths] = useState<string[]>([]);
 
   // State for confirmation dialog
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
@@ -401,48 +392,7 @@ const CreateTable = () => {
     }
   };
 
-  // Function to handle manual table creation
-  const handleCreateManual = async () => {
-    const sqlStatement = validateAndGenerateSQL();
-    if (!sqlStatement) return;
-
-    setLoading(true);
-    setCreateTableError("");
-    try {
-      await runQuery("", sqlStatement);
-      fetchDatabaseData();
-      toast.success("Table created successfully!");
-
-      // Reset all fields
-      resetForm();
-
-      // Optionally, add a new tab or perform other actions
-      addTab({
-        title: `${database}.${tableName}`,
-        content: { query: "", database, table: tableName },
-        type: "information",
-        databaseData: [],
-      });
-
-      closeCreateTableModal();
-    } catch (error: any) {
-      setCreateTableError(error.toString());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to handle copying SQL to clipboard
-  const handleCopySQL = () => {
-    navigator.clipboard.writeText(sql);
-    toast.success("SQL statement copied to clipboard!");
-    setStatementCopiedToClipBoard(true);
-    setTimeout(() => {
-      setStatementCopiedToClipBoard(false);
-    }, 4000);
-  };
-
-  // File upload handling
+  // Function to handle file change
   const handleFileChange = (selectedFile: File | null) => {
     if (selectedFile) {
       if (selectedFile.size > MAX_FILE_SIZE) {
@@ -478,7 +428,7 @@ const CreateTable = () => {
     }
   };
 
-  // Function to infer and set preview data
+  // Function to generate preview data and infer fields
   const generatePreviewData = (headers: string[], data: any[]) => {
     const inferredTypes = inferColumnTypes(headers, data);
     setPreviewData(data.slice(0, PREVIEW_ROW_COUNT));
@@ -554,8 +504,7 @@ const CreateTable = () => {
         if (fileType === "csv") {
           const lines = content
             .split("\n")
-            .filter((line) => line.trim() !== "")
-            .slice(csvHeaderRowsToSkip); // Skip header rows
+            .filter((line) => line.trim() !== "");
           if (lines.length < 1) {
             setCreateTableError(
               "CSV file must have headers and at least one data row."
@@ -564,8 +513,24 @@ const CreateTable = () => {
             setIsProcessing(false);
             return;
           }
-          headers = lines[0].split(csvDelimiter).map((header) => header.trim());
-          data = lines.slice(1).map((line) => line.split(csvDelimiter));
+
+          // Check if the CSV has headers
+          const useHeaders = true; // Assuming CSV has headers
+          if (useHeaders) {
+            headers = lines[0]
+              .split(csvDelimiter)
+              .map((header) => header.trim());
+            data = lines
+              .slice(1 + csvHeaderRowsToSkip)
+              .map((line) => line.split(csvDelimiter));
+          } else {
+            const columnCount = lines[0].split(csvDelimiter).length;
+            headers = Array.from(
+              { length: columnCount },
+              (_, i) => `column_${i + 1}`
+            );
+            data = lines.map((line) => line.split(csvDelimiter));
+          }
 
           // Generate preview data and infer types
           generatePreviewData(headers, data);
@@ -613,6 +578,14 @@ const CreateTable = () => {
           }
         }
 
+        // Validate fields before generating SQL
+        if (fields.length === 0 || fields.some((f) => !f.name || !f.type)) {
+          setCreateTableError("Failed to infer table schema from the file.");
+          setLoading(false);
+          setIsProcessing(false);
+          return;
+        }
+
         // Generate SQL statement
         const fieldDefinitions = fields
           .map(
@@ -625,7 +598,10 @@ const CreateTable = () => {
 
         let sqlStatement = `CREATE TABLE ${database}.${tableName}\n(\n    ${fieldDefinitions}\n) ENGINE = ${engine}\n`;
 
-        if (orderByFields.length > 0) {
+        // For file uploads, set default ORDER BY and other clauses if not set
+        if (orderByFields.length === 0) {
+          sqlStatement += `ORDER BY tuple()\n`;
+        } else {
           sqlStatement += `ORDER BY (${orderByFields.join(", ")})\n`;
         }
 
@@ -663,7 +639,7 @@ const CreateTable = () => {
         // Generate INSERT statements
         let insertSQL = "";
         if (fileType === "csv") {
-          insertSQL = `INSERT INTO ${database}.${tableName} FORMAT CSV\n${content}`;
+          insertSQL = `INSERT INTO ${database}.${tableName} FORMAT CSVWithNames\n${content}`;
         } else if (fileType === "json") {
           insertSQL = `INSERT INTO ${database}.${tableName} FORMAT JSONEachRow\n${content}`;
         }
@@ -728,16 +704,7 @@ const CreateTable = () => {
     setDatabase("");
     setTableName("");
     setEngine("MergeTree");
-    setFields([
-      {
-        name: "",
-        type: "String",
-        nullable: false,
-        isPrimaryKey: false,
-        isOrderBy: false,
-        isPartitionBy: false,
-      },
-    ]);
+    setFields([]);
     setPrimaryKeyFields([]);
     setOrderByFields([]);
     setPartitionByField(null);
@@ -755,6 +722,36 @@ const CreateTable = () => {
     setErrors({});
     setCreateTableError("");
     setStatementCopiedToClipBoard(false);
+  };
+
+  // Function to handle manual table creation
+  const handleCreateManual = async () => {
+    const sqlStatement = validateAndGenerateSQL();
+    if (!sqlStatement) return;
+
+    setLoading(true);
+    setCreateTableError("");
+    try {
+      await runQuery("", sqlStatement);
+      fetchDatabaseData();
+      toast.success("Table created successfully!");
+
+      addTab({
+        type: "information",
+        title: `${database}.${tableName}`,
+        content: { database, table: tableName },
+        databaseData: [],
+      });
+
+      // Reset all fields
+      resetForm();
+
+      closeCreateTableModal();
+    } catch (error: any) {
+      setCreateTableError(error.toString());
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -803,10 +800,18 @@ const CreateTable = () => {
                 onValidateAndGenerateSQL={validateAndGenerateSQL}
                 onCreateManual={handleCreateManual}
                 sql={sql}
-                onCopySQL={handleCopySQL}
+                onCopySQL={() => {
+                  navigator.clipboard.writeText(sql);
+                  toast.success("SQL statement copied to clipboard!");
+                  setStatementCopiedToClipBoard(true);
+                  setTimeout(() => {
+                    setStatementCopiedToClipBoard(false);
+                  }, 4000);
+                }}
                 createTableError={createTableError}
                 statementCopiedToClipBoard={statementCopiedToClipBoard}
-                databaseData={databaseData} // Pass databaseData here
+                databaseData={databaseData}
+                fieldTypes={[]}
               />
             </TabsContent>
 
@@ -826,6 +831,7 @@ const CreateTable = () => {
                 jsonNestedPaths={jsonNestedPaths}
                 errors={errors}
                 previewData={previewData}
+                fields={fields} // Pass fields here
                 onChange={(field, value) => {
                   if (field === "database") setDatabase(value);
                   else if (field === "tableName") setTableName(value);
@@ -846,19 +852,10 @@ const CreateTable = () => {
                 onCreateFromFile={handleCreateFromFile}
                 createTableError={createTableError}
                 isProcessing={isProcessing}
-                databaseData={databaseData} // Pass databaseData here
+                databaseData={databaseData}
               />
             </TabsContent>
           </Tabs>
-
-          {/* Generated SQL */}
-          {sql && (
-            <GeneratedSQL
-              sql={sql}
-              onCopySQL={handleCopySQL}
-              statementCopiedToClipBoard={statementCopiedToClipBoard}
-            />
-          )}
         </SheetContent>
       </Sheet>
     </>

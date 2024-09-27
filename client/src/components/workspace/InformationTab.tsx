@@ -5,6 +5,7 @@ import DatabaseInfo from "@/components/workspace/informationTab/DatabaseInfo";
 import DatabaseInfoTabs from "@/components/workspace/informationTab/DatabaseInfoTabs";
 import TableInfo from "@/components/workspace/informationTab/TableInfo";
 import TableInfoTabs from "@/components/workspace/informationTab/TableInfoTabs";
+import useTabStore from "@/stores/tabs.store";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -17,6 +18,8 @@ const InformationTab: React.FC<InformationTabProps> = ({ database, table }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>({});
+
+  const { closeTab, activeTabId } = useTabStore();
 
   useEffect(() => {
     const fetchInformation = async () => {
@@ -36,8 +39,8 @@ const InformationTab: React.FC<InformationTabProps> = ({ database, table }) => {
         const result = await response.data;
         setData(result);
       } catch (err: any) {
-        setError("Failed to load data.");
-        toast.error(`Failed to load data: ${err.message || err}`);
+        closeTab(activeTabId);
+        toast.error(`This tab is not available. ${err.message}`);
       } finally {
         setLoading(false);
       }

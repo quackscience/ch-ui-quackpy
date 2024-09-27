@@ -4,7 +4,6 @@ import Routes from "@/routes";
 import { ThemeProvider } from "@/components/theme-provider";
 import useAuthStore from "@/stores/user.store";
 import Logo from "/logo.png";
-import { Toaster } from "sonner";
 
 const App: React.FC = () => {
   const { checkAuth } = useAuthStore();
@@ -24,7 +23,7 @@ const App: React.FC = () => {
       {isLoading && (
         <>
           <div
-            className="fixed flex-col inset-0 text-4xl font-bold z-50 flex items-center justify-center"
+            className="fixed flex-col inset-0 text-4xl font-bold z-20 flex items-center justify-center"
             style={{ backdropFilter: "blur(5px)" }}
           >
             <img src={Logo} alt="Loading..." className="w-24 h-24 mb-6" />

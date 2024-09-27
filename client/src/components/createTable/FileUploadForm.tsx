@@ -20,7 +20,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileText, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "sonner";
 
 import CHUITable from "@/components/CHUITable"; // Import your CHUITable component
 
@@ -52,7 +51,7 @@ interface FileUploadFormProps {
   onCreateFromFile: () => void;
   createTableError: string;
   isProcessing: boolean;
-  databaseData: any[]; // Add this prop
+  databaseData: any[];
 }
 
 const FileUploadForm: React.FC<FileUploadFormProps> = ({
@@ -69,7 +68,7 @@ const FileUploadForm: React.FC<FileUploadFormProps> = ({
   jsonNestedPaths,
   errors,
   previewData,
-  fields,
+  fields = [], // Ensure fields has a default value
   onChange,
   onFileChange,
   onFileTypeChange,
@@ -254,7 +253,9 @@ const FileUploadForm: React.FC<FileUploadFormProps> = ({
                   <Checkbox
                     id="flatten-json"
                     checked={flattenJSON}
-                    onCheckedChange={(checked) => onFlattenJSONChange(checked)}
+                    onCheckedChange={(checked) =>
+                      onFlattenJSONChange(!!checked)
+                    }
                     aria-label="Flatten JSON"
                   />
                   <Label
@@ -299,15 +300,15 @@ const FileUploadForm: React.FC<FileUploadFormProps> = ({
         <div className="flex items-center justify-center w-full">
           <label
             htmlFor="file-upload"
-            className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+            className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
-              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+              <Upload className="w-8 h-8 mb-4 text-gray-500" />
+              <p className="mb-2 text-sm text-gray-500">
                 <span className="font-semibold">Click to upload</span> or drag
                 and drop
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500">
                 {fileType.toUpperCase()} (MAX. 100MB)
               </p>
             </div>
@@ -381,7 +382,6 @@ const FileUploadForm: React.FC<FileUploadFormProps> = ({
       {/* Error Message */}
       {createTableError && (
         <Alert variant="destructive" className="mt-4">
-          <AlertCircle className="h-4 w-4" />
           <AlertDescription>{createTableError}</AlertDescription>
         </Alert>
       )}

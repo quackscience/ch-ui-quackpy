@@ -1,35 +1,44 @@
-// src/config/menuItemsConfig.ts
+// src/lib/metricsConfig.ts
+import { ChartConfig } from "@/components/ui/chart";
 import {
   HomeIcon,
   TableIcon,
   CombineIcon,
   PlusCircle,
   TerminalSquareIcon,
+  Settings2,
 } from "lucide-react";
 
-export interface Query {
+export interface Metrics {
   title: string;
-  query: string;
-  type: "card" | "table" | "line" | "bar-chart" | "area-chart";
-  description?: string;
-}
-
-export interface MenuItem {
-  title: string;
+  description: string;
   href: string;
   icon: React.ElementType;
-  description?: string;
-  countVariant?: string;
-  items?: MenuItem[];
-  queries?: Query[];
+  items?: MetricItem[];
 }
 
-export const menuItemsConfig: MenuItem[] = [
+export interface MetricItem {
+  title: string;
+  query: string;
+  type: "card" | "table" | "chart";
+  chartType?:
+    | "area-chart"
+    | "bar-chart"
+    | "line-chart"
+    | "pie-chart"
+    | "radar-chart"
+    | "radial-chart";
+  description: string;
+  chartConfig: ChartConfig;
+}
+
+export const metrics: Metrics[] = [
   {
     title: "Overview",
     href: "/metrics",
+    description: "Overview of ClickHouse metrics.",
     icon: HomeIcon,
-    queries: [
+    items: [
       {
         title: "Running Queries",
         query: `SELECT * FROM system.processes WHERE is_cancelled = 0`,
@@ -37,74 +46,25 @@ export const menuItemsConfig: MenuItem[] = [
         description: "Currently running queries excluding system queries.",
       },
       {
-        title: "Databases and Tables",
-        query: `WITH
-                  dbs AS (SELECT COUNT(*) AS total_databases FROM system.databases),
-                  tbls AS (SELECT COUNT(*) AS total_tables FROM system.tables)
-                SELECT dbs.total_databases, tbls.total_tables FROM dbs, tbls;`,
-        type: "card",
-        description: "Total number of databases and tables.",
-      },
-      {
-        title: "Version and Uptime",
-        query: `SELECT version() AS version, uptime() AS uptime;`,
-        type: "card",
-        description: "Current ClickHouse version and server uptime.",
-      },
-      {
-        title: "Query Count Last 24 Hours",
-        query: `
-          SELECT toStartOfHour(event_time) AS event_time, user, COUNT(*) AS count
-          FROM merge(system, '^query_log')
-          WHERE type = 'QueryFinish' AND event_time >= (now() - INTERVAL 24 HOUR) AND user != ''
-          GROUP BY event_time, user
-          ORDER BY event_time ASC, count DESC`,
-        type: "bar-chart",
-        description: "Number of queries executed in the last 24 hours by user.",
-      },
-      {
-        title: "Memory Usage Last 24h (Avg / 10 Minutes)",
-        query: `SELECT toStartOfTenMinutes(event_time) as event_time,
-                   avg(CurrentMetric_MemoryTracking) AS avg_memory,
-                   formatReadableSize(avg_memory) AS readable_avg_memory
-            FROM merge(system, '^metric_log')
-            WHERE event_time >= (now() - INTERVAL 24 HOUR)
-            GROUP BY event_time
-            ORDER BY event_time ASC`,
-        type: "area-chart",
-        description: "Average memory usage over the last 24 hours.",
-      },
-      {
-        title: "CPU Usage Last 24h (Avg / 10 Minutes)",
-        query: `SELECT toStartOfTenMinutes(event_time) AS event_time,
-                   avg(ProfileEvent_OSCPUVirtualTimeMicroseconds) / 1000000 as avg_cpu
-            FROM merge(system, '^metric_log')
-            WHERE event_time >= (now() - INTERVAL 24 HOUR)
-            GROUP BY event_time
-            ORDER BY event_time ASC`,
-        type: "area-chart",
-        description: "Average CPU usage over the last 24 hours.",
-      },
-      {
-        title: "Merge and PartMutation Last 24h (Avg)",
-        query: `SELECT toStartOfHour(event_time) AS event_time,
-                   avg(CurrentMetric_Merge) AS avg_CurrentMetric_Merge,
-                   avg(CurrentMetric_PartMutation) AS avg_CurrentMetric_PartMutation
-            FROM merge(system, '^metric_log')
-            WHERE event_time >= (now() - INTERVAL 24 HOUR)
-            GROUP BY event_time
-            ORDER BY event_time ASC`,
-        type: "area-chart",
-        description:
-          "Average merge and part mutation metrics over the last 24 hours.",
+        title: "Daily Query Count",
+        description: "Number of queries per day",
+        type: "chart",
+        query: `SELECT count() as query_count, toStartOfDay(event_time) as day FROM system.query_log WHERE event_time > now() - INTERVAL 1 DAY GROUP BY day ORDER BY day`,
+        chartConfig: {
+          dataKey: "query_count",
+          xAxisKey: "day",
+          label: "Query Count",
+          color: "hsl(var(--chart-1))",
+        },
       },
     ],
   },
   {
     title: "Tables",
+    description: "Metrics related to tables.",
     href: "/metrics/tables",
     icon: TableIcon,
-    queries: [
+    items: [
       // Define queries specific to Tables here
       {
         title: "Total Tables",
@@ -118,8 +78,9 @@ export const menuItemsConfig: MenuItem[] = [
   {
     title: "Queries",
     href: "/metrics/queries",
+    description: "Metrics related to queries.",
     icon: TerminalSquareIcon,
-    queries: [
+    items: [
       // Define queries specific to Queries here
       {
         title: "Running Queries Count",
@@ -133,8 +94,9 @@ export const menuItemsConfig: MenuItem[] = [
   {
     title: "Merges",
     href: "/metrics/merges",
+    description: "Metrics related to merges.",
     icon: CombineIcon,
-    queries: [
+    items: [
       // Define queries specific to Merges here
       {
         title: "Total Merges",
@@ -148,14 +110,32 @@ export const menuItemsConfig: MenuItem[] = [
   {
     title: "More",
     href: "/metrics/more",
+    description: "Miscellaneous metrics.",
     icon: PlusCircle,
-    queries: [
+    items: [
       // Define queries specific to More here
       {
         title: "Disk Usage",
         query: `SELECT name, total_space AS size FROM system.disks`,
         type: "table",
         description: "Disk usage details.",
+      },
+      // Add more miscellaneous queries
+    ],
+  },
+  {
+    title: "Settings & Config",
+    href: "/metrics/settings",
+    description: "Settings and configuration.",
+    icon: Settings2,
+    items: [
+      // Define queries specific to More here
+      {
+        title: "Disk Usage",
+        query: `SELECT name, total_space AS size FROM system.disks`,
+        type: "table",
+        description: "Disk usage details.",
+        chartConfig: undefined,
       },
       // Add more miscellaneous queries
     ],

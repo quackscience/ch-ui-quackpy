@@ -67,7 +67,7 @@ const FieldManagement: React.FC<FieldManagementProps> = ({
       {fields.map((field, index) => (
         <div key={index} className="grid grid-cols-6 gap-4 items-center mt-2">
           {/* Field Name */}
-          <div className="col-span-2">
+          <div className="col-span-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -81,6 +81,7 @@ const FieldManagement: React.FC<FieldManagementProps> = ({
             <Input
               id={`field-name-${index}`}
               placeholder="Field Name"
+              size="sm"
               value={field.name}
               onChange={(e) => onUpdateField(index, "name", e.target.value)}
               className={errors[`fields.${index}.name`] ? "border-red-500" : ""}
@@ -147,6 +148,31 @@ const FieldManagement: React.FC<FieldManagementProps> = ({
                 <SelectItem value="NOT NULL">NOT NULL</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Column Description */}
+
+          <div className="col-span-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label htmlFor={`field-description-${index}`}>
+                    Description
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Enter a description for the column.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Input
+              id={`field-description-${index}`}
+              placeholder="Column Description"
+              value={field.description}
+              onChange={(e) =>
+                onUpdateField(index, "description", e.target.value)
+              }
+            />
           </div>
 
           {/* Field Options: PK, OB, PB */}

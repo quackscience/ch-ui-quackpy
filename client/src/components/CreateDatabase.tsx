@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
-import { CopyIcon, CopyCheck, AlertCircle } from "lucide-react";
+import { CopyIcon, CopyCheck } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -439,7 +439,6 @@ const CreateDatabase = () => {
             {/* Error Message */}
             {createDatabaseError && (
               <Alert variant="destructive" className="mt-4">
-                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{createDatabaseError}</AlertDescription>
               </Alert>
             )}

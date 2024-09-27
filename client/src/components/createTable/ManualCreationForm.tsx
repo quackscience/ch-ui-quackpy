@@ -11,10 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, X } from "lucide-react";
-import FieldManagement from "@/components/createTable/FieldManagement";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Copy, CopyCheck, X } from "lucide-react";
+import FieldManagement from "./FieldManagement";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ManualCreationFormProps {
   database: string;
@@ -37,7 +36,7 @@ interface ManualCreationFormProps {
   createTableError: string;
   statementCopiedToClipBoard: boolean;
   fieldTypes: string[];
-  databaseData: any[]; // Add this line
+  databaseData: any[]; // Add this prop
 }
 
 const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
@@ -59,7 +58,8 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
   sql,
   onCopySQL,
   createTableError,
-  databaseData, // Add this line
+  statementCopiedToClipBoard,
+  databaseData, // Destructure
 }) => {
   return (
     <div className="space-y-4">
@@ -145,12 +145,14 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
         <span className="text-sm text-primary/70">Primary Key(s):</span>
         {primaryKeyFields.length > 0 ? (
           primaryKeyFields.map((field) => (
-            <Badge key={field} variant="secondary" className="text-sm">
+            <span
+              key={field}
+              className="inline-flex items-center px-2 py-0.5 rounded bg-secondary text-xs font-medium"
+            >
               {field}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-1 h-4 w-4 p-0"
+              <button
+                type="button"
+                className="ml-1 text-red-500 hover:text-red-700 focus:outline-none"
                 onClick={() =>
                   onUpdateField(
                     fields.findIndex((f) => f.name === field),
@@ -161,8 +163,8 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
                 aria-label={`Remove primary key from ${field}`}
               >
                 <X className="h-3 w-3" />
-              </Button>
-            </Badge>
+              </button>
+            </span>
           ))
         ) : (
           <span className="text-xs text-gray-500">
@@ -176,12 +178,14 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
         <span className="text-sm text-primary/70">Order By Field(s):</span>
         {orderByFields.length > 0 ? (
           orderByFields.map((field) => (
-            <Badge key={field} variant="secondary" className="text-sm">
+            <span
+              key={field}
+              className="inline-flex items-center px-2 py-0.5 rounded bg-secondary text-xs font-medium"
+            >
               {field}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-1 h-4 w-4 p-0"
+              <button
+                type="button"
+                className="ml-1 text-red-500 hover:text-red-700 focus:outline-none"
                 onClick={() =>
                   onUpdateField(
                     fields.findIndex((f) => f.name === field),
@@ -192,8 +196,8 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
                 aria-label={`Remove order by from ${field}`}
               >
                 <X className="h-3 w-3" />
-              </Button>
-            </Badge>
+              </button>
+            </span>
           ))
         ) : (
           <span className="text-xs text-gray-500">
@@ -206,12 +210,11 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-sm text-primary/70">Partition By Field:</span>
         {partitionByField ? (
-          <Badge variant="secondary" className="text-sm">
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-secondary text-xs font-medium">
             {partitionByField}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-1 h-4 w-4 p-0"
+            <button
+              type="button"
+              className="ml-1 text-red-500 hover:text-red-700 focus:outline-none"
               onClick={() =>
                 onUpdateField(
                   fields.findIndex((f) => f.name === partitionByField),
@@ -222,8 +225,8 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
               aria-label={`Remove partition by from ${partitionByField}`}
             >
               <X className="h-3 w-3" />
-            </Button>
-          </Badge>
+            </button>
+          </span>
         ) : (
           <span className="text-xs text-gray-500">
             No column selected as partition by
@@ -265,15 +268,18 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
         <div className="mt-4">
           <div className="flex items-center">
             <h3 className="text-lg font-semibold">Generated SQL:</h3>
-            <Button
-              size="icon"
-              variant="link"
+            <button
+              type="button"
               onClick={onCopySQL}
-              className="ml-2"
+              className="ml-2 p-1 rounded hover:bg-gray-200"
               aria-label="Copy SQL Statement"
             >
-              {/* Replace with your CopyIcon and CopyCheck logic */}
-            </Button>
+              {!statementCopiedToClipBoard ? (
+                <Copy className="h-4 w-4" />
+              ) : (
+                <CopyCheck className="h-4 w-4 text-green-400" />
+              )}
+            </button>
           </div>
           <pre className="bg-primary/20 p-2 rounded mt-2 text-sm overflow-x-auto">
             {sql}
@@ -284,7 +290,6 @@ const ManualCreationForm: React.FC<ManualCreationFormProps> = ({
       {/* Error Message */}
       {createTableError && (
         <Alert variant="destructive" className="mt-4">
-          <AlertCircle className="h-4 w-4" />
           <AlertDescription>{createTableError}</AlertDescription>
         </Alert>
       )}

@@ -3,8 +3,8 @@ import { metrics } from "@/lib/metricsConfig";
 import MetricItemComponent from "@/components/metrics/MetricItemComponent";
 import MetricsNavigationMenu from "@/components/metrics/MetricsNavigationMenu";
 
-function MetricsMerges() {
-  const metric = metrics.find((m) => m.href === "/metrics/merges");
+function MetricsSettings() {
+  const metric = metrics.find((m) => m.href === "/metrics/settings");
 
   if (!metric) {
     return <div>Metric not found</div>;
@@ -29,4 +29,4 @@ function MetricsMerges() {
   );
 }
 
-export default MetricsMerges;
+export default MetricsSettings;

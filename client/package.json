@@ -53,6 +53,7 @@
     "framer-motion": "^11.3.8",
     "globby": "^7.1.1",
     "input-otp": "^1.2.4",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.395.0",
     "micromatch": "^4.0.7",
     "monaco-editor": "^0.50.0",
@@ -78,6 +79,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.9",
     "@types/node": "^20.14.6",
     "@types/papaparse": "^5.3.14",
     "@types/react": "^18.2.66",
