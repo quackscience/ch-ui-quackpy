@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Toaster richColors toastOptions={{}} />
+    <Toaster richColors toastOptions={{ duration: 2000, closeButton: true }} />
     <App />
   </React.StrictMode>
 );

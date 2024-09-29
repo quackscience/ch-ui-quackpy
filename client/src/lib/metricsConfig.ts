@@ -1,3 +1,6 @@
+//ignore TS check
+// @ts-nocheck
+
 import { ChartConfig } from "@/components/ui/chart";
 import {
   HomeIcon,
@@ -14,7 +17,7 @@ import {
 export interface Metrics {
   title: string;
   description: string;
-  href: string;
+  scope: string;
   icon: React.ElementType;
   items?: MetricItem[];
 }
@@ -32,10 +35,55 @@ export interface MetricItem {
 export const metrics: Metrics[] = [
   {
     title: "Overview",
-    href: "/metrics",
+    scope: "overview",
     description: "Overview of ClickHouse metrics.",
     icon: HomeIcon,
     items: [
+      {
+        title: "Server Uptime (days)",
+        query: `
+        -- set max decimal places to 2
+
+          SELECT 
+            ROUND(uptime() / 86400, 2) AS uptime_days -- 86400 seconds in a day 
+        `,
+        type: "card",
+        description:
+          "Total time the server has been running in seconds, minutes, hours, and days.",
+        tiles: 1,
+      },
+      {
+        title: "Total Databases",
+        query: `
+          SELECT COUNT(*) AS total_databases 
+          FROM system.databases 
+          WHERE name NOT IN ('system', 'information_schema')
+        `,
+        type: "card",
+        description: "Total number of databases excluding system databases.",
+        tiles: 1,
+      },
+      {
+        title: "Total Tables",
+        query: `
+          SELECT COUNT(*) AS total_tables 
+          FROM system.tables 
+          WHERE database NOT IN ('system', 'information_schema') 
+            AND is_temporary = 0 
+            AND engine LIKE '%MergeTree%'
+        `,
+        type: "card",
+        description: "Total number of user tables excluding temporary tables.",
+        tiles: 1,
+      },
+      {
+        title: "Version",
+        query: `SELECT version() AS version`,
+        type: "card",
+        description:
+          "Version of the ClickHouse server running on the current instance.",
+        tiles: 1,
+      },
       {
         title: "Running Queries",
         query: `SELECT * FROM system.processes WHERE is_cancelled = 0`,
@@ -48,11 +96,13 @@ export const metrics: Metrics[] = [
         description: "Number of queries per day for the last 30 days.",
         type: "chart",
         chartType: "bar",
-        query: `SELECT count() as query_count, toStartOfDay(event_time) as day 
-                FROM system.query_log 
-                WHERE event_time > now() - INTERVAL 30 DAY 
-                GROUP BY day 
-                ORDER BY day`,
+        query: `
+          SELECT count() AS query_count, toStartOfDay(event_time) AS day 
+          FROM system.query_log 
+          WHERE event_time > now() - INTERVAL 30 DAY 
+          GROUP BY day 
+          ORDER BY day
+        `,
         chartConfig: {
           indexBy: "day",
           query_count: {
@@ -62,48 +112,12 @@ export const metrics: Metrics[] = [
         },
         tiles: 4,
       },
-      {
-        title: "Server Uptime",
-        query: `SELECT uptime() AS uptime`,
-        type: "card",
-        description: "Total time the server has been running.",
-        tiles: 1,
-      },
-      {
-        title: "Total Databases",
-        query: `SELECT COUNT(*) AS total_databases FROM system.databases WHERE name NOT IN ('system', 'information_schema')`,
-        type: "card",
-        description: "Total number of databases excluding system databases.",
-        tiles: 1,
-      },
-      {
-        title: "Active Users",
-        query: `SELECT COUNT(DISTINCT user) AS active_users FROM system.query_log WHERE event_time > now() - INTERVAL 1 DAY`,
-        type: "card",
-        description:
-          "Number of users who have run queries in the last 24 hours.",
-        tiles: 1,
-      },
-      {
-        title: "Active Connections",
-        query: `SELECT value AS active_connections FROM system.metrics WHERE metric = 'TCPConnection'`,
-        type: "card",
-        description: "Current number of active TCP connections.",
-        tiles: 1,
-      },
-      {
-        title: "Total Queries (Last 24h)",
-        query: `SELECT COUNT(*) AS total_queries FROM system.query_log WHERE event_time > now() - INTERVAL 1 DAY AND type = 'QueryFinish'`,
-        type: "card",
-        description: "Total number of queries executed in the last 24 hours.",
-        tiles: 1,
-      },
     ],
   },
   {
     title: "Tables",
     description: "Metrics related to tables.",
-    href: "/metrics/tables",
+    scope: "tables",
     icon: TableIcon,
     items: [
       {
@@ -114,18 +128,32 @@ export const metrics: Metrics[] = [
         tiles: 1,
       },
       {
-        title: "Table Sizes",
-        query: `SELECT name, total_bytes FROM system.tables WHERE database NOT IN ('system', 'information_schema') ORDER BY total_bytes DESC LIMIT 30`,
-        type: "chart",
-        chartType: "bar",
-        description: "Size distribution of the top 30 largest tables.",
-        chartConfig: {
-          indexBy: "name",
-          total_bytes: {
-            label: "Size (bytes)",
-            color: "hsl(var(--chart-2))",
-          },
-        },
+        title: "Total System Tables",
+        query: `SELECT COUNT(*) AS total_tables FROM system.tables WHERE lower(database) IN ('system', 'information_schema')`,
+        type: "card",
+        description: "Total number of system tables.",
+        tiles: 1,
+      },
+      {
+        title: "Total Temporary Tables",
+        query: `SELECT COUNT(*) AS total_tables FROM system.tables WHERE is_temporary = 1`,
+        type: "card",
+        description: "Total number of temporary tables.",
+        tiles: 1,
+      },
+      // card
+      {
+        title: "Biggest Table",
+        query: `SELECT name AS table FROM system.tables WHERE database NOT IN ('system', 'information_schema') ORDER BY total_bytes DESC LIMIT 1`,
+        type: "card",
+        description: "Largest table in the system.",
+        tiles: 1,
+      },
+      {
+        title: "Table Cardinality",
+        query: `SELECT database, name AS table, total_rows FROM system.tables WHERE database NOT IN ('system', 'information_schema') ORDER BY total_rows DESC LIMIT 10`,
+        type: "table",
+        description: "Number of rows in the top 10 tables.",
         tiles: 4,
       },
       {
@@ -133,19 +161,49 @@ export const metrics: Metrics[] = [
         query: `SELECT database, name AS table, total_rows FROM system.tables WHERE database NOT IN ('system', 'information_schema') ORDER BY total_rows DESC LIMIT 10`,
         type: "table",
         description: "Number of rows in the top 10 tables.",
-        tiles: 2,
+        tiles: 4,
       },
       {
-        title: "Number of Parts per Table",
-        query: `SELECT name AS table, COUNT(*) AS part_count FROM system.parts WHERE active AND database NOT IN ('system', 'information_schema') GROUP BY table ORDER BY part_count DESC LIMIT 10`,
+        title: "Table Sizes (MB)",
+        query: `SELECT name AS name, total_bytes / 1024 / 1024 AS total_mb FROM system.tables WHERE database NOT IN ('system', 'information_schema') ORDER BY total_mb DESC LIMIT 20`,
         type: "chart",
         chartType: "bar",
-        description: "Number of active parts in the top 10 tables.",
+        description: "Size distribution of the top 30 largest tables.",
+        chartConfig: {
+          indexBy: "name",
+          total_mb: {
+            label: "Size (MB)",
+            color: "hsl(var(--chart-2))",
+          },
+        },
+        tiles: 4,
+      },
+      {
+        title: "Number of Partitions per Table",
+        query: `SELECT table, COUNT(*) AS partition_count FROM system.parts WHERE active = 1 GROUP BY table ORDER BY partition_count DESC LIMIT 20`,
+        type: "chart",
+        chartType: "bar",
+        description: "Number of partitions per table.",
         chartConfig: {
           indexBy: "table",
-          part_count: {
-            label: "Part Count",
-            color: "hsl(var(--chart-5))",
+          partition_count: {
+            label: "Partition Count",
+            color: "hsl(var(--chart-3))",
+          },
+        },
+        tiles: 4,
+      },
+      {
+        title: "Table Engine Distribution",
+        query: `SELECT engine, COUNT(*) AS table_count FROM system.tables WHERE database NOT IN ('system', 'information_schema') GROUP BY engine ORDER BY table_count DESC`,
+        type: "chart",
+        chartType: "bar",
+        description: "Distribution of table engines.",
+        chartConfig: {
+          indexBy: "engine",
+          table_count: {
+            label: "Table Count",
+            color: "hsl(var(--chart-1))",
           },
         },
         tiles: 4,
@@ -154,83 +212,152 @@ export const metrics: Metrics[] = [
   },
   {
     title: "Queries",
-    href: "/metrics/queries",
-    description: "Metrics related to queries.",
+    scope: "queries",
+    description: "Comprehensive metrics related to queries in the system.",
     icon: TerminalSquareIcon,
     items: [
       {
         title: "Running Queries Count",
-        query: `SELECT COUNT(*) AS running_queries FROM system.processes WHERE is_cancelled = 0 AND query NOT LIKE '%system%'`,
+        query: `
+          SELECT COUNT(*) AS running_queries 
+          FROM system.processes 
+          WHERE is_cancelled = 0 AND query NOT LIKE '%system%'`,
         type: "card",
-        description: "Number of currently running queries.",
+        description: "Current number of active queries in the system.",
         tiles: 1,
       },
       {
+        title: "Query Error Rate",
+        query: `
+          SELECT
+            round(100 * failed_queries / total_queries, 2) AS error_rate
+          FROM
+            (
+              SELECT
+                COUNT(*) AS total_queries,
+                COUNTIf(type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing')) AS failed_queries
+              FROM
+                system.query_log
+              WHERE
+                event_time > now() - INTERVAL 1 DAY
+            ) AS query_counts`,
+        type: "card",
+        description: "Percentage of failed queries over the last 24 hours.",
+        tiles: 1,
+      },
+      {
+        title: "Average Query Duration",
+        query: `
+          SELECT 
+            round(avg(query_duration_ms), 2) AS avg_duration_ms
+          FROM 
+            system.query_log
+          WHERE 
+            type = 'QueryFinish' 
+            AND event_time > now() - INTERVAL 1 DAY`,
+        type: "card",
+        description:
+          "Average duration of queries executed in the last 24 hours.",
+        tiles: 1,
+      },
+      {
+        title: "Total Queries (Last 24h)",
+        query: `
+          SELECT COUNT(*) AS total_queries 
+          FROM system.query_log 
+          WHERE event_time > now() - INTERVAL 1 DAY`,
+        type: "card",
+        description: "Total number of queries executed in the last 24 hours.",
+        tiles: 1,
+      },
+      {
+        title: "Queries Per User",
+        query: `
+          SELECT 
+            user, 
+            COUNT(*) AS query_count 
+          FROM 
+            system.query_log 
+          WHERE 
+            event_time > now() - INTERVAL 1 DAY 
+            AND type = 'QueryFinish' 
+          GROUP BY user 
+          ORDER BY query_count DESC 
+          LIMIT 10`,
+        type: "table",
+        description:
+          "Top 10 users by the number of queries executed in the last 24 hours.",
+      },
+      {
         title: "Query Duration Distribution",
-        query: `SELECT 
-                  CASE 
-                    WHEN query_duration_ms < 100 THEN '<100ms'
-                    WHEN query_duration_ms < 1000 THEN '100ms-1s'
-                    WHEN query_duration_ms < 10000 THEN '1s-10s'
-                    WHEN query_duration_ms < 60000 THEN '10s-1m'
-                    ELSE '>1m'
-                  END AS duration_bucket,
-                  COUNT(*) AS query_count
-                FROM system.query_log
-                WHERE type = 'QueryFinish'
-                  AND event_time > now() - INTERVAL 1 DAY
-                GROUP BY duration_bucket
-                ORDER BY duration_bucket`,
+        query: `
+          SELECT 
+            CASE 
+              WHEN query_duration_ms < 10 THEN '<10ms'
+              WHEN query_duration_ms < 20 THEN '10ms-20ms'
+              WHEN query_duration_ms < 50 THEN '20ms-50ms'
+              WHEN query_duration_ms < 100 THEN '50ms-100ms'
+              WHEN query_duration_ms < 200 THEN '100ms-200ms'
+              WHEN query_duration_ms < 500 THEN '200ms-500ms'
+              WHEN query_duration_ms < 1000 THEN '500ms-1s'
+              WHEN query_duration_ms < 5000 THEN '1s-5s'
+              WHEN query_duration_ms < 30000 THEN '5s-30s'
+              ELSE '>30s'
+            END AS duration_bucket,
+            COUNT(*) AS query_count
+          FROM system.query_log
+          WHERE 
+            type = 'QueryFinish'
+            AND event_time > now() - INTERVAL 1 DAY
+          GROUP BY duration_bucket
+          ORDER BY duration_bucket`,
         type: "chart",
         chartType: "bar",
-        description: "Distribution of query durations over the last 24 hours.",
+        description:
+          "Granular distribution of query durations over the last 24 hours.",
         chartConfig: {
           indexBy: "duration_bucket",
           query_count: {
             label: "Query Count",
-            color: "hsl(var(--chart-3))",
+            color: "hsl(var(--chart-1))",
           },
         },
         tiles: 4,
       },
       {
         title: "Top Slow Queries",
-        query: `SELECT query, query_duration_ms FROM system.query_log WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 1 DAY ORDER BY query_duration_ms DESC LIMIT 10`,
+        query: `
+          SELECT 
+            query, 
+            query_duration_ms 
+          FROM system.query_log 
+          WHERE type = 'QueryFinish' 
+            AND event_time > now() - INTERVAL 1 DAY 
+          ORDER BY query_duration_ms DESC 
+          LIMIT 10`,
         type: "table",
-        description: "Top 10 slowest queries over the last 24 hours.",
-        tiles: 2,
-      },
-      {
-        title: "Query Error Rate",
-        query: `SELECT 
-                  round(100 * failed_queries / total_queries, 2) AS error_rate
-                FROM
-                (
-                    SELECT 
-                        (SELECT COUNT(*) FROM system.query_log WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 1 DAY) AS total_queries,
-                        (SELECT COUNT(*) FROM system.query_log WHERE type LIKE 'Exception%' AND event_time > now() - INTERVAL 1 DAY) AS failed_queries
-                )`,
-        type: "card",
-        description: "Percentage of failed queries over the last 24 hours.",
-        tiles: 1,
+        description: "Top 10 slowest queries executed in the last 24 hours.",
+        tiles: 4,
       },
       {
         title: "Queries Per Second (QPS)",
-        query: `SELECT 
-                  toStartOfMinute(event_time) AS minute,
-                  COUNT(*) AS qps
-                FROM system.query_log
-                WHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 1 HOUR
-                GROUP BY minute
-                ORDER BY minute`,
+        query: `
+          SELECT 
+            toStartOfMinute(event_time) AS minute,
+            COUNT(*) AS qps
+          FROM system.query_log
+          WHERE type = 'QueryFinish' 
+            AND event_time > now() - INTERVAL 1 HOUR
+          GROUP BY minute
+          ORDER BY minute`,
         type: "chart",
         chartType: "area",
-        description: "Queries per second over the last hour.",
+        description: "Rate of queries per second over the last hour.",
         chartConfig: {
           indexBy: "minute",
           qps: {
             label: "QPS",
-            color: "hsl(var(--chart-6))",
+            color: "hsl(var(--chart-3))",
           },
         },
         tiles: 4,
@@ -238,55 +365,22 @@ export const metrics: Metrics[] = [
     ],
   },
   {
-    title: "Merges",
-    href: "/metrics/merges",
-    description: "Metrics related to merges.",
-    icon: CombineIcon,
-    items: [
-      {
-        title: "Total Merges",
-        query: `SELECT COUNT(*) AS total_merges FROM system.merges WHERE 1 = 1`,
-        type: "card",
-        description: "Total number of ongoing merges.",
-        tiles: 1,
-      },
-      {
-        title: "Merge Progress",
-        query: `SELECT 
-                  table,
-                  round(100 * progress, 2) AS progress_percent,
-                  round(total_size_bytes_compressed / 1024 / 1024, 2) AS size_mb
-                FROM system.merges
-                ORDER BY progress_percent DESC`,
-        type: "chart",
-        chartType: "radial",
-        description: "Progress of ongoing merges.",
-        chartConfig: {
-          indexBy: "table",
-          progress_percent: {
-            label: "Progress",
-            color: "hsl(var(--chart-4))",
-          },
-        },
-        tiles: 2,
-      },
-    ],
-  },
-  {
     title: "Performance",
-    href: "/metrics/performance",
+    scope: "/metrics/performance",
     description: "Performance-related metrics.",
     icon: CpuIcon,
     items: [
       {
         title: "CPU Usage",
-        query: `SELECT 
-        toStartOfMinute(event_time) AS minute,
-        avg(ProfileEvent_OSCPUVirtualTimeMicroseconds) AS cpu_usage
-      FROM system.metric_log
-      WHERE event_time > now() - INTERVAL 1 HOUR
-      GROUP BY minute
-      ORDER BY minute`,
+        query: `
+          SELECT 
+            toStartOfMinute(event_time) AS minute,
+            avg(ProfileEvent_OSCPUVirtualTimeMicroseconds) AS cpu_usage
+          FROM system.metric_log
+          WHERE event_time > now() - INTERVAL 1 HOUR
+          GROUP BY minute
+          ORDER BY minute
+        `,
         type: "chart",
         chartType: "line",
         description: "CPU usage over the last hour.",
@@ -297,17 +391,19 @@ export const metrics: Metrics[] = [
             color: "hsl(var(--chart-5))",
           },
         },
-        tiles: 4,
+        tiles: 2,
       },
       {
         title: "Memory Usage",
-        query: `SELECT 
-        toStartOfMinute(event_time) AS minute,
-        avg(ProfileEvent_MemoryTracking) AS memory_usage
-      FROM system.metric_log
-      WHERE event_time > now() - INTERVAL 1 HOUR
-      GROUP BY minute
-      ORDER BY minute`,
+        query: `
+          SELECT 
+            toStartOfMinute(event_time) AS minute,
+            avg(ProfileEvent_MemoryWorkerRun) AS memory_usage
+          FROM system.metric_log
+          WHERE event_time > now() - INTERVAL 1 HOUR
+          GROUP BY minute
+          ORDER BY minute
+        `,
         type: "chart",
         chartType: "area",
         description: "Memory usage over the last hour.",
@@ -318,65 +414,111 @@ export const metrics: Metrics[] = [
             color: "hsl(var(--chart-1))",
           },
         },
-        tiles: 4,
+        tiles: 2,
       },
-      {
-        title: "Disk I/O",
-        query: `SELECT 
-                  toStartOfMinute(event_time) AS minute,
-                  sum(ProfileEvent_ReadCompressedBytes) AS read_bytes,
-                  sum(ProfileEvent_WriteCompressedBytes) AS write_bytes
-                FROM system.metric_log
-                WHERE event_time > now() - INTERVAL 1 HOUR
-                GROUP BY minute
-                ORDER BY minute`,
-        type: "chart",
-        chartType: "area",
-        description: "Disk I/O over the last hour.",
-        chartConfig: {
-          indexBy: "minute",
-          read_bytes: {
-            label: "Read Bytes",
-            color: "hsl(var(--chart-7))",
-          },
-          write_bytes: {
-            label: "Write Bytes",
-            color: "hsl(var(--chart-8))",
-          },
-        },
-        tiles: 4,
-      },
+
       {
         title: "Threads Usage",
-        query: `SELECT 
-                  toStartOfMinute(event_time) AS minute,
-                  avg(ThreadsRunning) AS threads_running,
-                  avg(ThreadsTotal) AS threads_total
-                FROM system.metric_log
-                WHERE event_time > now() - INTERVAL 1 HOUR
-                GROUP BY minute
-                ORDER BY minute`,
+        query: `
+        SELECT 
+            toStartOfMinute(event_time) AS minute,
+            avg(ProfileEvent_Query) AS threads_running
+        FROM system.metric_log
+        WHERE event_time > now() - INTERVAL 1 HOUR
+        GROUP BY minute
+        ORDER BY minute
+        `,
         type: "chart",
-        chartType: "line",
+        chartType: "area",
         description: "Threads usage over the last hour.",
         chartConfig: {
           indexBy: "minute",
           threads_running: {
             label: "Threads Running",
-            color: "hsl(var(--chart-9))",
-          },
-          threads_total: {
-            label: "Threads Total",
-            color: "hsl(var(--chart-10))",
+            color: "hsl(var(--chart-1))",
           },
         },
-        tiles: 4,
+        tiles: 2,
+      },
+      {
+        title: "Network Traffic",
+        query: `
+   SELECT
+  toStartOfMinute (event_time) AS minute,
+  sum(value) AS bytes_received
+FROM
+  system.asynchronous_metric_log
+WHERE
+  event_time > now () - INTERVAL 1 HOUR
+  AND metric LIKE '%NetworkReceiveBytes%'
+GROUP BY
+  minute
+ORDER BY
+  minute
+        `,
+        type: "chart",
+        chartType: "area",
+        description: "Network traffic over the last hour.",
+        chartConfig: {
+          indexBy: "minute",
+          bytes_received: {
+            label: "Bytes Received",
+            color: "hsl(var(--chart-4))",
+          },
+        },
+        tiles: 2,
+      },
+      {
+        title: "Disk Usage",
+        query: `
+          SELECT 
+            toStartOfMinute(event_time) AS minute,
+            avg(ProfileEvent_ReadCompressedBytes) AS disk_usage
+          FROM system.metric_log
+          WHERE event_time > now() - INTERVAL 1 HOUR
+          GROUP BY minute
+          ORDER BY minute
+        `,
+        type: "chart",
+        chartType: "line",
+        description: "Average disk usage over the last hour.",
+        chartConfig: {
+          indexBy: "minute",
+          disk_usage: {
+            label: "Disk Usage",
+            color: "hsl(var(--chart-6))",
+          },
+        },
+        tiles: 2,
+      },
+      {
+        title: "Keep Alive Connections",
+        query: `
+          SELECT 
+            toStartOfMinute(event_time) AS minute,
+            avg(CurrentMetric_KeeperAliveConnections) AS active_connections
+          FROM system.metric_log
+          WHERE event_time > now() - INTERVAL 1 HOUR
+          GROUP BY minute
+          ORDER BY minute
+        `,
+        type: "chart",
+        chartType: "line",
+        description: "Active Keep alive connections over the last hour.",
+        chartConfig: {
+          indexBy: "minute",
+          active_connections: {
+            label: "Active Connections",
+            color: "hsl(var(--chart-1))",
+          },
+        },
+        tiles: 2,
       },
     ],
   },
   {
     title: "Storage",
-    href: "/metrics/storage",
+    scope: "/metrics/storage",
     description: "Storage-related metrics.",
     icon: HardDriveIcon,
     items: [
@@ -400,7 +542,7 @@ export const metrics: Metrics[] = [
                 GROUP BY database
                 ORDER BY size_gb DESC`,
         type: "chart",
-        chartType: "pie",
+        chartType: "bar",
         description: "Size distribution of databases.",
         chartConfig: {
           indexBy: "database",
@@ -415,7 +557,7 @@ export const metrics: Metrics[] = [
   },
   {
     title: "Network",
-    href: "/metrics/network",
+    scope: "/metrics/network",
     description: "Network-related metrics.",
     icon: NetworkIcon,
     items: [
@@ -443,13 +585,34 @@ export const metrics: Metrics[] = [
             color: "hsl(var(--chart-4))",
           },
         },
-        tiles: 4,
+        tiles: 2,
+      },
+      {
+        title: "Network Connections HTTP",
+        query: `SELECT 
+                  toStartOfMinute(event_time) AS minute,
+                  avg(CurrentMetric_HTTPConnection) AS connections
+                FROM system.metric_log
+                WHERE event_time > now() - INTERVAL 1 HOUR
+                GROUP BY minute
+                ORDER BY minute`,
+        type: "chart",
+        chartType: "line",
+        description: "HTTP connections over the last hour.",
+        chartConfig: {
+          indexBy: "minute",
+          connections: {
+            label: "Connections",
+            color: "hsl(var(--chart-1))",
+          },
+        },
+        tiles: 2,
       },
     ],
   },
   {
     title: "Settings & Config",
-    href: "/metrics/settings",
+    scope: "/metrics/settings",
     description: "Settings and configuration.",
     icon: Settings2,
     items: [
@@ -458,48 +621,142 @@ export const metrics: Metrics[] = [
         query: `SELECT name, value, description FROM system.settings`,
         type: "table",
         description: "Current ClickHouse settings.",
-        tiles: 2,
+        tiles: 4,
       },
       {
         title: "Users",
-        query: `SELECT name, storage, authentication_type FROM system.users`,
+        query: `SELECT * FROM system.users`,
         type: "table",
         description: "List of users and their authentication types.",
-        tiles: 2,
+        tiles: 4,
       },
     ],
   },
   {
-    title: "Errors & Logs",
-    href: "/metrics/errors",
-    description: "Error logs and exceptions.",
+    title: "Query Exceptions",
+    scope: "exceptions",
+    description: "Overview of query exceptions in the system.",
     icon: AlertTriangleIcon,
     items: [
       {
-        title: "Recent Errors",
-        query: `SELECT event_time, user, query, exception FROM system.query_log WHERE type LIKE 'Exception%' AND event_time > now() - INTERVAL 1 HOUR ORDER BY event_time DESC LIMIT 10`,
+        title: "Exceptions (Last 24h)",
+        query: `
+          SELECT COUNT(*) AS total_exceptions 
+          FROM system.query_log 
+          WHERE type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing') 
+            AND event_time > now() - INTERVAL 1 DAY
+        `,
+        type: "card",
+        description:
+          "Total number of exceptions recorded in the last 24 hours.",
+        tiles: 1,
+      },
+      {
+        title: "Exception Rate (Last 24h)",
+        query: `
+          SELECT 
+            round(100 * COUNTIf(type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing')) / COUNT(*), 2) AS exception_rate 
+          FROM 
+            system.query_log 
+          WHERE 
+            event_time > now() - INTERVAL 1 DAY
+        `,
+        type: "card",
+        description:
+          "Percentage of queries that resulted in exceptions over the last 24 hours.",
+        tiles: 1,
+      },
+      {
+        title: "Recent Exceptions",
+        query: `
+          SELECT 
+            event_time, 
+            user, 
+            query, 
+            exception 
+          FROM 
+            system.query_log 
+          WHERE 
+            type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing') 
+            AND event_time > now() - INTERVAL 1 HOUR 
+          ORDER BY 
+            event_time DESC 
+          LIMIT 10
+        `,
         type: "table",
-        description: "Recent query errors in the last hour.",
+        description: "Last 10 exceptions recorded in the last hour.",
+        tiles: 4,
+      },
+
+      {
+        title: "Exceptions by User",
+        query: `
+          SELECT 
+            user, 
+            COUNT(*) AS exception_count 
+          FROM 
+            system.query_log 
+          WHERE 
+            type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing') 
+            AND event_time > now() - INTERVAL 1 DAY 
+          GROUP BY 
+            user 
+          ORDER BY 
+            exception_count DESC 
+          LIMIT 10
+        `,
+        type: "table",
+        description:
+          "Top 10 users with the most exceptions in the last 24 hours.",
+        tiles: 4,
+      },
+      {
+        title: "Exceptions Over Time",
+        query: `
+          SELECT 
+            toStartOfHour(event_time) AS hour, 
+            COUNT(*) AS exception_count 
+          FROM 
+            system.query_log 
+          WHERE 
+            type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing') 
+            AND event_time > now() - INTERVAL 1 DAY 
+          GROUP BY 
+            hour 
+          ORDER BY 
+            hour
+        `,
+        type: "chart",
+        chartType: "line",
+        description: "Count of exceptions recorded over the last 24 hours.",
+        chartConfig: {
+          indexBy: "hour",
+          exception_count: {
+            label: "Exception Count",
+            color: "hsl(var(--chart-2))",
+          },
+        },
         tiles: 2,
       },
-    ],
-  },
-  {
-    title: "Replication",
-    href: "/metrics/replication",
-    description: "Replication-related metrics.",
-    icon: HomeIcon,
-    items: [
       {
-        title: "Replication Lag",
-        query: `SELECT 
-                  database,
-                  table,
-                  absolute_delay
-                FROM system.replication_queue
-                ORDER BY absolute_delay DESC LIMIT 10`,
+        title: "Most Common Exceptions",
+        query: `
+          SELECT 
+            exception, 
+            COUNT(*) AS count 
+          FROM 
+            system.query_log 
+          WHERE 
+            type IN ('ExceptionBeforeStart', 'ExceptionWhileProcessing') 
+            AND event_time > now() - INTERVAL 1 DAY 
+          GROUP BY 
+            exception 
+          ORDER BY 
+            count DESC 
+          LIMIT 10
+        `,
         type: "table",
-        description: "Replication lag for tables.",
+        description: "Top 10 most common exceptions in the last 24 hours.",
         tiles: 2,
       },
     ],

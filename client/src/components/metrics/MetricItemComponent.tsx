@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, ComponentType } from "react";
 import { MetricItem } from "@/lib/metricsConfig";
 import useTabStore from "@/stores/tabs.store";
 import {
@@ -20,7 +20,6 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,6 +30,31 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import CHUITable from "../CHUITable";
+import { Skeleton } from "../ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertCircleIcon,
+  CopyIcon,
+  InfoIcon,
+  EllipsisVertical,
+  DownloadCloud,
+  RefreshCcw,
+  Braces,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Props {
   item: MetricItem;
@@ -42,62 +66,127 @@ function MetricItemComponent({ item }: Props) {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const result = await runQuery("", item.query);
-        setData(result);
-        setErrorMessage(null);
-      } catch (err: any) {
-        setErrorMessage(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await runQuery("", item.query);
+      setData(result);
+      setErrorMessage(null);
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, [item.query, runQuery]);
 
   if (loading) {
     return (
-      <Card className="p-4 col-span-1">
-        <CardContent>Loading {item.title}...</CardContent>
-      </Card>
+      <>
+        <Skeleton className="h-4 w-full mt-2" />
+        <Skeleton className="h-2 w-full mt-2" />
+        <Skeleton className="h-6 w-full mt-2" />
+        <Skeleton className="h-8 w-full mt-2" />
+      </>
     );
   }
 
   if (errorMessage) {
     return (
-      <Card className="p-4">
-        <CardContent>
-          Error loading {item.title}: {errorMessage}
-        </CardContent>
+      <Card className="p-4 bg-red-300 dark:bg-red-600/30 text-primary/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <p>Error loading {item.title}</p>
+            {/* copy error message to clipboard */}
+            <Button
+              className="ml-4 bg-transparent text-red-600 hover:text-red-500 hover:bg-inherit"
+              onClick={() => {
+                navigator.clipboard.writeText(errorMessage);
+                toast.info("Error message copied to clipboard");
+              }}
+            >
+              Copy Error
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="icon"
+              onClick={fetchData}
+              className=" ml-4 bg-transparent text-red-600 hover:text-red-500 hover:bg-inherit"
+            >
+              <RefreshCcw className="w-4 h-4" />
+            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <AlertCircleIcon className="w-6 h-6 text-muted-foreground cursor-pointer" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="p-2 max-w-[400px]">
+                    <p className="text-muted-foreground text-xs">
+                      {errorMessage}
+                    </p>
+                    <Button
+                      className="mt-2"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const query = item.query;
+                        navigator.clipboard.writeText(query);
+                        toast.success("Query copied to clipboard");
+                      }}
+                    >
+                      <CopyIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
       </Card>
     );
   }
 
-  const formatKey = (key: string) => {
-    return key
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   const renderCardContent = () => {
     if (!data || !data.data || data.data.length === 0) {
-      return "No data available";
+      return (
+        <div className="text-muted-foreground">No data available for card</div>
+      );
     }
     return data.data.map((item: any, index: number) => (
       <div key={index} className="mb-2">
         {Object.entries(item).map(([key, value]) => (
           <div key={key}>
-            <span className="font-semibold">{formatKey(key)}:</span>{" "}
-            {value?.toString()}
+            <span className="font-extrabold text-3xl">{value?.toString()}</span>
           </div>
         ))}
       </div>
     ));
+  };
+
+  const handleDownloadData = (data: any) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const fileName = `${item.title.replace(" ", "_").toLocaleLowerCase()}.json`;
+    downloadBlob(blob, fileName);
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const renderChart = () => {
@@ -105,8 +194,8 @@ function MetricItemComponent({ item }: Props) {
       return "No data available for chart";
     }
 
-    let ChartComponent;
-    let DataComponent;
+    let ChartComponent: ComponentType<any>;
+    let DataComponent: ComponentType<any>;
 
     switch (item.chartType) {
       case "line":
@@ -115,29 +204,30 @@ function MetricItemComponent({ item }: Props) {
         break;
       case "area":
         ChartComponent = AreaChart;
-        DataComponent = Area;
+        DataComponent = Area as unknown as ComponentType<any>;
         break;
       case "pie":
         ChartComponent = PieChart;
-        DataComponent = Pie;
+        DataComponent = Pie as unknown as ComponentType<any>;
         break;
       case "radar":
         ChartComponent = RadarChart;
-        DataComponent = Radar;
+        DataComponent = Radar as unknown as ComponentType<any>;
         break;
       case "radial":
         ChartComponent = RadialBarChart;
-        DataComponent = RadialBar;
+        DataComponent = RadialBar as unknown as ComponentType<any>;
         break;
       case "bar":
       default:
         ChartComponent = BarChart;
-        DataComponent = Bar;
+        DataComponent = Bar as unknown as ComponentType<any>;
     }
 
-    const dataKey = Object.keys(item.chartConfig).find(
+    const dataKeys = Object.keys(item.chartConfig).filter(
       (key) => key !== "indexBy"
     );
+    const dataKey = dataKeys[0];
     const maxValue = Math.max(
       ...data.data.map((d: any) => d[dataKey as string])
     );
@@ -146,20 +236,21 @@ function MetricItemComponent({ item }: Props) {
     return (
       <ChartContainer
         config={item.chartConfig}
-        className="mt-4 h-[300px] w-full"
+        className="mt-4 h-[250px] w-full"
       >
         <ChartComponent
           data={data.data}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
         >
           {["bar", "line", "area"].includes(item.chartType as string) && (
             <>
-              <CartesianGrid strokeDasharray="3 3" vertical={true} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey={item.chartConfig.indexBy as string}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12 }}
+                tickMargin={10}
                 tickFormatter={(value) => value.toString().slice(0, 10)}
               />
               <YAxis
@@ -179,37 +270,44 @@ function MetricItemComponent({ item }: Props) {
               <PolarRadiusAxis />
             </>
           )}
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
           <ChartLegend content={<ChartLegendContent />} />
-          {Object.keys(item.chartConfig)
-            .filter((key) => key !== "indexBy")
-            .map((key) => (
-              <DataComponent
-                key={key}
-                dataKey={key}
-                fill={`var(--color-${key})`}
-                stroke={`var(--color-${key})`}
-                strokeWidth={2}
-                dot={false}
-                radius={item.chartType === "bar" ? [4, 4, 0, 0] : undefined}
-                fillOpacity={item.chartType === "area" ? 0.3 : 1}
-                {...(item.chartType === "pie" || item.chartType === "radial"
-                  ? {
-                      data: data.data,
-                      nameKey: item.chartConfig?.indexBy as string,
-                      label: true,
-                    }
-                  : {})}
-              >
-                {(item.chartType === "pie" || item.chartType === "radial") &&
-                  data.data.map((_: any, index: number) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={`var(--color-${index + 1})`}
+          {dataKeys.map((key) => (
+            <DataComponent
+              key={key}
+              dataKey={key}
+              fill={`var(--color-${key})`}
+              stroke={`var(--color-${key})`}
+              strokeWidth={2}
+              dot={false}
+              radius={item.chartType === "bar" ? [4, 4, 0, 0] : undefined}
+              fillOpacity={item.chartType === "area" ? 0.3 : 1}
+              {...(item.chartType === "pie" || item.chartType === "radial"
+                ? {
+                    data: data.data,
+                    nameKey: item.chartConfig?.indexBy as string,
+                    label: true,
+                  }
+                : {})}
+            >
+              {item.chartType === "pie" &&
+                data.data.map((_: any, index: number) => (
+                  <PieChart>
+                    <Pie
+                      key={index}
+                      data={data.data}
+                      dataKey={key}
+                      nameKey={item.chartConfig?.indexBy as string}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={item.chartType === "radial" ? 80 : 50}
+                      fill={`var(--color-${key})`}
+                      label
                     />
-                  ))}
-              </DataComponent>
-            ))}
+                  </PieChart>
+                ))}
+            </DataComponent>
+          ))}
         </ChartComponent>
       </ChartContainer>
     );
@@ -248,11 +346,71 @@ function MetricItemComponent({ item }: Props) {
   };
 
   return (
-    <Card className={`h-full col-span-${item.tiles || 4}`}>
+    <Card>
       <CardHeader>
-        <CardTitle>{item.title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg truncate">{item.title}</CardTitle>
+          <div className="flex items-center space-x-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <InfoIcon className="w-5 h-5 text-muted-foreground cursor-pointer" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="p-2 max-w-[350px]">
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <EllipsisVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    const query = item.query;
+                    navigator.clipboard.writeText(query);
+                    toast.success("Query copied to clipboard");
+                  }}
+                >
+                  <CopyIcon className="w-4 h-4 mr-2" />
+                  Copy Query
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadData(data)}>
+                  <DownloadCloud className="w-4 h-4 mr-2" />
+                  Download Data
+                </DropdownMenuItem>
+                {/* copyData to Clipboard */}
+
+                <DropdownMenuItem
+                  onClick={() => {
+                    const jsonString = JSON.stringify(data.data, null, 2);
+                    navigator.clipboard
+                      .writeText(jsonString)
+                      .then(() => {
+                        toast.success("Data copied to clipboard");
+                      })
+                      .catch((err) => {
+                        console.error("Failed to copy: ", err);
+                        toast.error("Failed to copy data to clipboard");
+                      });
+                  }}
+                >
+                  <Braces className="w-4 h-4 mr-2" />
+                  Copy Data
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>{renderContent()}</CardContent>
+      <CardContent className="truncate">{renderContent()}</CardContent>
     </Card>
   );
 }

@@ -23,7 +23,7 @@ export function MetricsNavigationMenu() {
   const navigate = useNavigate();
 
   const handleMetricClick = (metric: any) => {
-    const scope = metric.href.split("/").pop();
+    const scope = metric.scope;
     navigate(scope ? `/metrics?scope=${scope}` : "/metrics");
   };
 
