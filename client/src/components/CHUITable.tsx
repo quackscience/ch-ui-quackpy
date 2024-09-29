@@ -13,8 +13,9 @@ import {
   RowData,
   VisibilityState,
   Table,
+  Row,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual"; // Updated import
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -71,12 +72,12 @@ interface TableProps<T extends RowData> {
   initialPageSize?: number;
 }
 
-export function CHUITable<T extends RowData>({
+const DEFAULT_COLUMN_SIZE = 150;
+
+function CHUITable<T extends RowData>({
   result,
   initialPageSize = 50,
 }: TableProps<T>) {
-  const DEFAULT_COLUMN_SIZE = 150;
-
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -120,11 +121,14 @@ export function CHUITable<T extends RowData>({
       {
         id: "row-number",
         header: "#",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
         enableResizing: true,
-        size: 40,
+        size: 60,
         minSize: 40,
         maxSize: 200,
+        enableSorting: false,
+        enableColumnFilter: false,
       },
       ...meta.map((col, index) => ({
         id: col.name || `col-${index}`,
@@ -143,7 +147,7 @@ export function CHUITable<T extends RowData>({
         },
       })),
     ],
-    [meta]
+    [meta, pagination.pageIndex, pagination.pageSize]
   );
 
   const table = useReactTable({
@@ -173,6 +177,24 @@ export function CHUITable<T extends RowData>({
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
+  const { rows } = table.getRowModel();
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 35,
+    overscan: 10,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start || 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - (virtualRows[virtualRows.length - 1].end || 0)
+      : 0;
+
   const isFiltered = table.getState().columnFilters.length > 0;
 
   const clearAllFilters = useCallback(() => {
@@ -187,51 +209,44 @@ export function CHUITable<T extends RowData>({
     return flexRender(cell.column.columnDef.cell, cell.getContext());
   }, []);
 
-  const calculateAutoSize = useCallback(
-    (columnId: string, table: Table<T>) => {
-      if (sizeCache.current[columnId]) {
-        return sizeCache.current[columnId];
+  const calculateAutoSize = useCallback((columnId: string, table: Table<T>) => {
+    if (sizeCache.current[columnId]) {
+      return sizeCache.current[columnId];
+    }
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) return DEFAULT_COLUMN_SIZE;
+
+    const computedStyle = getComputedStyle(document.body);
+    context.font = computedStyle.font || "12px sans-serif";
+
+    const headerText = columnId;
+    let maxWidth = context.measureText(headerText).width + 16;
+
+    const rows = table.getRowModel().rows.slice(0, 200);
+    for (const row of rows) {
+      const cellValue = row.getValue(columnId);
+      const cellText =
+        cellValue === null
+          ? "null"
+          : typeof cellValue === "object"
+          ? JSON.stringify(cellValue)
+          : cellValue?.toString();
+      const width = context.measureText(cellText || "").width + 16;
+      if (width > maxWidth) {
+        maxWidth = width;
       }
+    }
 
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) return DEFAULT_COLUMN_SIZE;
+    const maxSize =
+      table.getAllColumns().find((col) => col.id === columnId)?.columnDef
+        .maxSize || 4000;
+    const calculatedSize = Math.min(maxWidth, maxSize);
 
-      // Set font to match table cells
-      const computedStyle = getComputedStyle(document.body);
-      context.font = computedStyle.font || "12px sans-serif";
-
-      // Measure header
-      const headerText = columnId;
-      let maxWidth = context.measureText(headerText).width + 16; // adding padding
-
-      // Measure up to first 200 cells
-      const rows = table.getRowModel().rows.slice(0, 200);
-      for (const row of rows) {
-        const cellValue = row.getValue(columnId);
-        const cellText =
-          cellValue === null
-            ? "null"
-            : typeof cellValue === "object"
-            ? JSON.stringify(cellValue)
-            : cellValue?.toString();
-        const width = context.measureText(cellText || "").width + 16;
-        if (width > maxWidth) {
-          maxWidth = width;
-        }
-      }
-
-      // Limit to column's maxSize
-      const maxSize =
-        table.getAllColumns().find((col) => col.id === columnId)?.columnDef
-          .maxSize || 4000;
-      const calculatedSize = Math.min(maxWidth, maxSize);
-
-      sizeCache.current[columnId] = calculatedSize;
-      return calculatedSize;
-    },
-    [DEFAULT_COLUMN_SIZE]
-  );
+    sizeCache.current[columnId] = calculatedSize;
+    return calculatedSize;
+  }, []);
 
   const handleDoubleClick = useCallback(
     (header: any) => {
@@ -241,14 +256,12 @@ export function CHUITable<T extends RowData>({
         const isCurrentlyAutoSized = prev[columnId];
 
         if (isCurrentlyAutoSized) {
-          // Reset to default size
           setColumnSizing((old) => ({
             ...old,
             [columnId]: DEFAULT_COLUMN_SIZE,
           }));
           return { ...prev, [columnId]: false };
         } else {
-          // Calculate auto size
           const autoSize = calculateAutoSize(columnId, table);
           setColumnSizing((old) => ({
             ...old,
@@ -261,36 +274,19 @@ export function CHUITable<T extends RowData>({
     [calculateAutoSize, table]
   );
 
-  // Set up the virtualizer using useVirtualizer
-  const rowVirtualizer = useVirtualizer({
-    count: table.getRowModel().rows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 35, // Adjust this to your row height
-    overscan: 10, // Adjust based on your needs
-  });
-
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
-
-  const TableRow = React.memo(
-    ({ row, style }: { row: any; style?: React.CSSProperties }) => (
-      <tr
-        key={row.id}
-        className="hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-        style={style}
-      >
-        {row.getVisibleCells().map((cell: any) => (
-          <td
-            key={cell.id}
-            style={{ width: cell.column.getSize() }}
-            className="p-2 border dark:border-gray-700 truncate"
-          >
-            {cell.column.id === "row-number" ? row.index + 1 : renderCell(cell)}
-          </td>
-        ))}
-      </tr>
-    )
-  );
+  const TableRow = React.memo(({ row }: { row: Row<T> }) => (
+    <tr className="hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+      {row.getVisibleCells().map((cell) => (
+        <td
+          key={cell.id}
+          style={{ width: cell.column.getSize() }}
+          className="p-2 border dark:border-gray-700 truncate"
+        >
+          {renderCell(cell)}
+        </td>
+      ))}
+    </tr>
+  ));
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -566,9 +562,22 @@ export function CHUITable<T extends RowData>({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} row={row} />
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: `${paddingTop}px` }} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => (
+              <TableRow
+                key={rows[virtualRow.index].id}
+                row={rows[virtualRow.index]}
+              />
             ))}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: `${paddingBottom}px` }} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -576,4 +585,4 @@ export function CHUITable<T extends RowData>({
   );
 }
 
-export default CHUITable;
+export default React.memo(CHUITable);
