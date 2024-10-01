@@ -1,24 +1,6 @@
-// USER AND AUTH TYPES
+// types.ts
 
-export interface AuthState {
-  user: User | null;
-  allUsers: User[];
-  authIsLoading: boolean;
-  error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  getCurrentUser: () => Promise<void>;
-  setCurrentOrganization: (organizationId: string) => Promise<void>;
-  setCurrentCredential: (credentialId: string) => Promise<void>;
-  checkAuth: () => Promise<boolean>;
-  admin: () => boolean;
-  updateUser: (userId: string, userData: Partial<User>) => Promise<void>;
-  getAllUsers: () => Promise<void>;
-  getActiveCredential: () => ClickHouseCredential | null;
-  getActiveOrganization: () => Organization | null;
-}
-
+// User and Auth Types
 export interface User {
   _id: string;
   name: string;
@@ -32,15 +14,120 @@ export interface User {
   activeClickhouseCredential?: ClickHouseCredential;
 }
 
-// ORGANIZATION
+// Organization Types
+export interface Organization {
+  _id: string;
+  name: string;
+  slug: string;
+  members: User[];
+  owner: User;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export interface OrganizationState {
+// ClickHouse Credential Types
+export interface ClickHouseCredential {
+  _id: string;
+  name: string;
+  slug: string;
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  owner: string;
+  users: string[];
+  allowedOrganizations: string[];
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  __v?: number;
+}
+
+// Tab Types
+export type TabType = "sql" | "result" | "home" | "information" | "saved_query";
+
+export interface Tab {
+  id: string;
+  title: string;
+  content: string | { query: string; database: string; table: string };
+  type: TabType;
+  results?: any[];
+  error?: string | null;
+  isLoading?: boolean;
+  isSaved?: boolean;
+  isDirty?: boolean;
+  databaseData: any[];
+}
+
+// Chat Types
+export interface Chat {
+  _id: string;
+  participants: User[];
+  messages: Message[];
+  lastMessage: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Message {
+  _id: string;
+  sender: User;
+  content: string;
+  timestamp: string;
+}
+
+// Merged AppState Interface
+export interface AppState {
+  // Auth State
+  user: User | null;
+  allUsers: User[];
+  authIsLoading: boolean;
+  authError: string | null;
+
+  // Organization State
   organizations: Organization[];
   selectedOrganization: Organization | null;
-  isLoading: boolean;
-  error: string | null;
+  orgIsLoading: boolean;
+  orgError: string | null;
+
+  // ClickHouse Credential State
+  credentials: ClickHouseCredential[];
+  selectedCredential: ClickHouseCredential | null;
+  availableCredentials: ClickHouseCredential[];
+  credIsLoading: boolean;
+  credError: string | null;
+
+  // Tab State
+  tabs: Tab[];
+  activeTabId: string;
+  tabIsLoading: boolean;
+  tabError: string | null;
+  isLoadingDatabase: boolean;
+  databaseData: any[];
+  isSavedQuery: boolean;
+  isDirty: boolean;
+  isCreateTableModalOpen: boolean;
+  isCreateDatabaseModalOpen: boolean;
+  selectedDatabaseForCreateTable: string;
+
+  // Connection State
+  isConnected: boolean;
+  instanceVersion: string;
+  lastChecked: Date | null;
+
+  // Auth Actions
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  getCurrentUser: () => Promise<void>;
+  setCurrentOrganization: (organizationId: string) => Promise<void>;
+  setCurrentCredential: (credentialId: string) => Promise<void>;
+  checkAuth: () => Promise<boolean>;
+  admin: () => boolean;
+  updateUser: (userId: string, userData: Partial<User>) => Promise<void>;
+  getAllUsers: () => Promise<void>;
+
+  // Organization Actions
   fetchOrganizations: () => Promise<void>;
-  setSelectedOrganization: (organization: Organization | null) => void;
   addOrganization: (name: string) => Promise<void>;
   updateOrganization: (id: string, name: string) => Promise<void>;
   deleteOrganization: (id: string) => Promise<void>;
@@ -52,25 +139,8 @@ export interface OrganizationState {
     organizationId: string,
     userId: string
   ) => Promise<void>;
-}
 
-export interface Organization {
-  _id: string;
-  name: string;
-  slug: string;
-  members: User[]; // Changed from Member[] to User[]
-  owner: User;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// CLICKHOUSE CREDENTIALS
-export interface ClickHouseCredentialState {
-  credentials: ClickHouseCredential[];
-  selectedCredential: ClickHouseCredential | null;
-  availableCredentials: ClickHouseCredential[];
-  isLoading: boolean;
-  error: string | null;
+  // ClickHouse Credential Actions
   fetchCredentials: () => Promise<void>;
   fetchAvailableCredentials: (organizationId: string) => Promise<void>;
   createCredential: (
@@ -98,57 +168,8 @@ export interface ClickHouseCredentialState {
     userId: string
   ) => Promise<void>;
   resetCredentials: () => void;
-  setSelectedCredential: (credential: ClickHouseCredential | null) => void;
-}
 
-export interface ClickHouseCredential {
-  _id: string;
-  name: string;
-  slug: string;
-  host: string;
-  port: number;
-  username: string;
-  password?: string;
-  owner: string;
-  users: Array<string>;
-  allowedOrganizations: Array<string>;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  __v?: number;
-}
-
-// Tab related types
-export type TabType = "sql" | "result" | "home" | "information" | "saved_query";
-
-export interface Tab {
-  id: string;
-  title: string;
-  content: string | { query: string; database: string; table: string };
-  type: TabType;
-  results?: any[]; // Query results
-  error?: string | null; // Query error
-  isLoading?: boolean; // Loading state for the query
-  isSaved?: boolean; // Whether the query is saved
-  isDirty?: boolean; // Whether the query has unsaved changes
-  databaseData: any[]; // Added this line
-}
-
-export interface TabQueryState {
-  tabs: Tab[];
-  activeTabId: string;
-  isLoading: boolean;
-  error: string | null;
-  isLoadingDataBase: boolean;
-  databaseData: [];
-  isSavedQuery: boolean;
-  isDirty: boolean;
-
-  isCreateTableModalOpen: boolean;
-  selectedDatabaseForCreateTable: string;
-  closeCreateDatabaseModal: () => void;
-  openCreateDatabaseModal: () => void;
-  isCreateDatabaseModalOpen: boolean;
-
+  // Tab Actions
   addTab: (tab: Omit<Tab, "id">) => void;
   closeTab: (id: string) => void;
   updateTabContent: (id: string, updatedValues: Partial<Tab>) => void;
@@ -161,38 +182,10 @@ export interface TabQueryState {
   fetchDatabaseData: () => Promise<void>;
   closeCreateTableModal: () => void;
   openCreateTableModal: (database: string) => void;
+  closeCreateDatabaseModal: () => void;
+  openCreateDatabaseModal: () => void;
   resetTabs: () => void;
-}
 
-//CHATS
-export interface Chat {
-  _id: string;
-  participants: User[];
-  messages: Message[];
-  lastMessage: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface Message {
-  _id: string;
-  sender: User;
-  content: string;
-  timestamp: string;
-}
-
-export interface ChatState {
-  chats: Chat[];
-  selectedChat: Chat | null;
-  isLoading: boolean;
-  error: string | null;
-  fetchChats: () => Promise<void>;
-  fetchChat: (chatId: string) => Promise<void>;
-  createChat: (participantId: string) => Promise<Chat>;
-  sendMessage: (chatId: string, content: string) => Promise<Message>;
-  deleteMessage: (chatId: string, messageId: string) => Promise<void>;
-  deleteChat: (chatId: string) => Promise<void>;
-  handleNewMessage: (chatId: string, message: Message) => void;
-  handleMessageDeleted: (chatId: string, messageId: string) => void;
-  handleChatDeleted: (chatId: string) => void;
+  // Connection Actions
+  checkConnection: () => Promise<void>;
 }

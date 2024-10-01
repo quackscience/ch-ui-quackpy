@@ -3,12 +3,12 @@ import React, { useEffect, useState } from "react";
 import Logo from "/logo.png";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { useNavigate } from "react-router-dom";
 import { SignpostBig } from "lucide-react";
 
 const NotFound: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppStore();
   const navigate = useNavigate();
   const [navigationPath, setNavigationPath] = useState("");
 

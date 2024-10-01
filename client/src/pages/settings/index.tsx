@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import {
   Card,
   CardContent,
@@ -19,7 +19,7 @@ import { getInitials, bgColorsByInitials } from "@/lib/helpers";
 import { Pencil } from "lucide-react";
 
 function SettingsPage() {
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
 
   const {

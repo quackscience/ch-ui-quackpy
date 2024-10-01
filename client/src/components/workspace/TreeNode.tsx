@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { toast } from "sonner";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 
 export interface TreeNodeData {
   name: string;
@@ -68,7 +68,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     getTabById,
     openCreateTableModal,
     openCreateDatabaseModal,
-  } = useTabStore();
+  } = useAppStore();
 
   const toggleOpen = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

@@ -1,6 +1,6 @@
 import { useState, useEffect, ComponentType } from "react";
 import { MetricItem } from "@/lib/metricsConfig";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 import {
   Bar,
   BarChart,
@@ -61,7 +61,7 @@ interface Props {
 }
 
 function MetricItemComponent({ item }: Props) {
-  const { runQuery } = useTabStore();
+  const { runQuery } = useAppStore();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -152,10 +152,8 @@ function MetricItemComponent({ item }: Props) {
   }
 
   const renderCardContent = () => {
-    if (!data || !data.data || data.data.length === 0) {
-      return (
-        <div className="text-muted-foreground">No data available for card</div>
-      );
+    if (!data) {
+      return <div className="text-muted-foreground font-bold">No data</div>;
     }
     return data.data.map((item: any, index: number) => (
       <div key={index} className="mb-2">
@@ -191,7 +189,9 @@ function MetricItemComponent({ item }: Props) {
 
   const renderChart = () => {
     if (!data || !data.data || data.data.length === 0 || !item.chartConfig) {
-      return "No data available for chart";
+      return(
+        <div className="text-muted-foreground font-bold">No data</div>
+      )
     }
 
     let ChartComponent: ComponentType<any>;

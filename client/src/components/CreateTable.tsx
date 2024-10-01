@@ -10,12 +10,11 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 
 import ConfirmationDialog from "@/components/createTable/ConfirmationDialog";
 import ManualCreationForm from "@/components/createTable/ManualCreationForm";
 import FileUploadForm from "@/components/createTable/FileUploadForm";
-import { add } from "date-fns";
 
 const TIME_FIELDS = ["Date", "DateTime"];
 
@@ -41,7 +40,7 @@ const CreateTable = () => {
     databaseData,
     runQuery,
     addTab,
-  } = useTabStore();
+  } = useAppStore();
 
   // State variables
   const [database, setDatabase] = useState("");

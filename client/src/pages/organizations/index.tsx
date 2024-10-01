@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 import OrganizationList from "@/components/OrganizationList";
 import AddOrganizationDialog from "@/components/AddOrganizationDialog";
 import OrganizationDetailDialog from "@/components/OrganizationDetailDialog";
@@ -10,37 +10,49 @@ import UpdateOrganizationDialog from "@/components/UpdateOrganizationDialog";
 import { Search, Plus, ArrowUpDown, Tally5, Info } from "lucide-react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import InfoDialog from "@/components/InfoDialog"; // Ensure this is the correct import path
+import InfoDialog from "@/components/InfoDialog";
 import { Organization } from "@/types/types";
-import useAuthStore from "@/stores/user.store";
 
 function OrganizationsPage() {
-  const { organizations, fetchOrganizations } = useOrganizationStore();
-  const { user } = useAuthStore();
+  const {
+    organizations,
+    fetchOrganizations,
+    user,
+    deleteOrganization,
+    setSelectedOrganization,
+    orgIsLoading,
+    orgError,
+  } = useAppStore();
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false); // State for InfoDialog
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "memberCount">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
+  const fetchOrganizationsHandler = useCallback(async () => {
     try {
-      setIsLoading(true);
-      fetchOrganizations();
+      await fetchOrganizations();
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
         toast.error("Failed to fetch organizations");
       }
-    } finally {
-      setIsLoading(false);
     }
   }, [fetchOrganizations]);
+
+  useEffect(() => {
+    fetchOrganizationsHandler();
+  }, [fetchOrganizationsHandler]);
+
+  useEffect(() => {
+    if (orgError) {
+      toast.error(orgError);
+    }
+  }, [orgError]);
 
   const userSelectedOrganization = user?.activeOrganization?._id;
 
@@ -67,9 +79,9 @@ function OrganizationsPage() {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
-  const deleteOrganization = async (organizationId: string) => {
+  const handleDeleteOrganization = async (organizationId: string) => {
     try {
-      await useOrganizationStore.getState().deleteOrganization(organizationId);
+      await deleteOrganization(organizationId);
       toast.info(`Organization deleted successfully`);
     } catch (error) {
       if (error instanceof Error) {
@@ -87,7 +99,7 @@ function OrganizationsPage() {
           Organizations
           <Info
             className="h-6 w-6 text-blue-500 cursor-pointer ml-3"
-            onClick={() => setIsInfoDialogOpen(true)} // Open InfoDialog on click
+            onClick={() => setIsInfoDialogOpen(true)}
           />
         </CardTitle>
       </CardHeader>
@@ -107,7 +119,6 @@ function OrganizationsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <Search className="right-3 top-2 absolute" />
-
           </div>
         </div>
 
@@ -124,7 +135,7 @@ function OrganizationsPage() {
         </div>
 
         <div className="flex-grow overflow-hidden">
-          {isLoading ? (
+          {orgIsLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
@@ -135,14 +146,16 @@ function OrganizationsPage() {
               organizations={filteredOrganizations}
               userSelectedOrganization={userSelectedOrganization ?? null}
               onViewDetails={(org: Organization) => {
-                useOrganizationStore.getState().setSelectedOrganization(org);
+                setSelectedOrganization(org);
                 setIsDetailDialogOpen(true);
               }}
               onEdit={(org: Organization) => {
-                useOrganizationStore.getState().setSelectedOrganization(org);
+                setSelectedOrganization(org);
                 setIsUpdateDialogOpen(true);
               }}
-              onDelete={(org: Organization) => deleteOrganization(org._id)}
+              onDelete={(org: Organization) =>
+                handleDeleteOrganization(org._id)
+              }
             />
           ) : (
             <div className="h-full flex flex-col items-center justify-center">

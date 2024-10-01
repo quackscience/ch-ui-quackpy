@@ -23,9 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
-import useAuthStore from "@/stores/user.store";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppstore from "@/stores/appStore";
 import {
   DatabaseZap,
   Users,
@@ -52,9 +50,7 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { selectedCredential } = useClickHouseCredentialStore();
-  const { allUsers } = useAuthStore();
-  const { organizations } = useOrganizationStore();
+  const { selectedCredential, allUsers, organizations } = useAppstore();
 
   if (!selectedCredential) return null;
 

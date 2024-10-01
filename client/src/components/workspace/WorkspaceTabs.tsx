@@ -28,7 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import HomeTab from "@/components/workspace/HomeTab";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 import SqlTab from "@/components/workspace/SqlTab";
 import InformationTab from "./InformationTab";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,7 @@ interface SortableTabProps {
 function SortableTab({ tab, isActive, onActivate }: SortableTabProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: tab.id });
-  const { closeTab, updateTabTitle } = useTabStore();
+  const { closeTab, updateTabTitle } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(tab.title);
   const [isHovering, setIsHovering] = useState(false);
@@ -143,7 +143,7 @@ function SortableTab({ tab, isActive, onActivate }: SortableTabProps) {
 
 export function WorkspaceTabs() {
   const { tabs, activeTabId, addTab, setActiveTab, moveTab, closeTab } =
-    useTabStore();
+    useAppStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -154,7 +154,7 @@ export function WorkspaceTabs() {
 
   const addNewCodeTab = useCallback(() => {
     addTab({
-      title: "Query " + tabs.length,
+      title: "Query " +   tabs.length,
       type: "sql",
       content: "",
       databaseData: [],

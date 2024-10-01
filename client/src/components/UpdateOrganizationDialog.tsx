@@ -1,5 +1,5 @@
 // src/components/UpdateOrganizationDialog.tsx
-import {useEffect} from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,7 +20,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -36,7 +36,7 @@ const UpdateOrganizationDialog: React.FC<UpdateOrganizationDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { selectedOrganization, updateOrganization } = useOrganizationStore();
+  const { selectedOrganization, updateOrganization } = useAppStore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,9 +52,9 @@ const UpdateOrganizationDialog: React.FC<UpdateOrganizationDialogProps> = ({
         toast.success(`Organization ${values.name} updated successfully`);
       } catch (error) {
         if (error instanceof Error) {
-          toast.error(error.message)
+          toast.error(error.message);
         } else {
-          toast.error("Failed to update organization")
+          toast.error("Failed to update organization");
         }
       }
       onClose();

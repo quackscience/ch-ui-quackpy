@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
+import useAppStore from "@/stores/appStore";
 import CredentialList from "@/components/CredentialList";
 import AddCredentialDialog from "@/components/AddCredentialDialog";
 import CredentialDetailDialog from "@/components/CredentialDetailDialog";
@@ -13,8 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import InfoDialog from "@/components/InfoDialog"; // Ensure this is the correct import path
 
 function CredentialsPage() {
-  const { credentials, fetchCredentials, setSelectedCredential } =
-    useClickHouseCredentialStore();
+  const { credentials, fetchCredentials, setCurrentCredential } = useAppStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
@@ -62,7 +61,7 @@ function CredentialsPage() {
 
   const deleteCredential = (credentialId: string) => {
     try {
-      useClickHouseCredentialStore.getState().deleteCredential(credentialId);
+      useAppStore.getState().deleteCredential(credentialId);
       toast.success("Credential deleted successfully");
     } catch (error) {
       if (error instanceof Error) {
@@ -137,12 +136,11 @@ function CredentialsPage() {
             <CredentialList
               credentials={filteredCredentials}
               onViewDetails={(cred) => {
-                setSelectedCredential(cred);
+                setCurrentCredential(cred._id);
                 setIsDetailDialogOpen(true);
               }}
               onEdit={(cred) => {
-                useClickHouseCredentialStore;
-                setSelectedCredential(cred);
+                setCurrentCredential(cred._id);
                 setIsUpdateDialogOpen(true);
               }}
               onDelete={(cred) => {

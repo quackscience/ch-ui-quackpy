@@ -5,7 +5,7 @@ import DatabaseInfo from "@/components/workspace/informationTab/DatabaseInfo";
 import DatabaseInfoTabs from "@/components/workspace/informationTab/DatabaseInfoTabs";
 import TableInfo from "@/components/workspace/informationTab/TableInfo";
 import TableInfoTabs from "@/components/workspace/informationTab/TableInfoTabs";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,7 +19,7 @@ const InformationTab: React.FC<InformationTabProps> = ({ database, table }) => {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>({});
 
-  const { closeTab, activeTabId } = useTabStore();
+  const { closeTab, activeTabId } = useAppStore();
 
   useEffect(() => {
     const fetchInformation = async () => {

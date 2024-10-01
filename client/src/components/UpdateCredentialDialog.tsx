@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
+import useAppStore from "@/stores/appStore";
 
 const credentialSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -52,8 +52,7 @@ const UpdateCredentialDialog: React.FC<UpdateCredentialDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { selectedCredential, updateCredential } =
-    useClickHouseCredentialStore();
+  const { selectedCredential, updateCredential } = useAppStore();
   const [isTestingCredentials, setIsTestingCredentials] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCredentialValid, setIsCredentialValid] = useState(false);
@@ -105,7 +104,7 @@ const UpdateCredentialDialog: React.FC<UpdateCredentialDialogProps> = ({
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error("Failed to update credentials")
+        toast.error("Failed to update credentials");
       }
     } finally {
       setIsSubmitting(false);

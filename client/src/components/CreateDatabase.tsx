@@ -29,7 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import useTabStore from "@/stores/tabs.store";
+import useAppstore from "@/stores/appStore";
 
 const ENGINE_OPTIONS = [
   "Atomic",
@@ -50,7 +50,7 @@ const CreateDatabase = () => {
     databaseData,
     runQuery,
     addTab,
-  } = useTabStore();
+  } = useAppstore();
 
   // State variables for database creation
   const [databaseName, setDatabaseName] = useState("");

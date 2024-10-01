@@ -39,8 +39,7 @@ import {
   UserPlus,
   UserMinus,
 } from "lucide-react";
-import useAuthStore from "@/stores/user.store";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 import { Alert } from "./ui/alert";
 import { Organization } from "@/types/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -70,9 +69,13 @@ const OrganizationList: React.FC<OrganizationListProps> = ({
     useState<Organization | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  const { getAllUsers, allUsers, user: currentUser } = useAuthStore();
-  const { addUserToOrganization, removeUserFromOrganization } =
-    useOrganizationStore();
+  const {
+    getAllUsers,
+    allUsers,
+    user: currentUser,
+    addUserToOrganization,
+    removeUserFromOrganization,
+  } = useAppStore();
 
   // Filter users not in the organization
   const usersNotInOrganization = useMemo(() => {

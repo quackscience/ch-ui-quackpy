@@ -35,8 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 
 const credentialSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -67,14 +66,12 @@ const AddCredentialDialog: React.FC<AddCredentialDialogProps> = ({
   const {
     createCredential,
     fetchCredentials,
-    isLoading: isCredentialLoading,
-    error: credentialError,
-  } = useClickHouseCredentialStore();
-  const {
     organizations,
     fetchOrganizations,
-    error: orgError,
-  } = useOrganizationStore();
+    orgError,
+    credError,
+    credIsLoading,
+  } = useAppStore();
   const [isTestingCredentials, setIsTestingCredentials] = useState(false);
   const [isCredentialValid, setIsCredentialValid] = useState(false);
 
@@ -104,10 +101,10 @@ const AddCredentialDialog: React.FC<AddCredentialDialogProps> = ({
   }, [orgError]);
 
   useEffect(() => {
-    if (credentialError) {
-      toast.error(`Credential error: ${credentialError}`);
+    if (credError) {
+      toast.error(`Credential error: ${credError}`);
     }
-  }, [credentialError]);
+  }, [credError]);
 
   const onSubmit = async (data: CredentialFormValues) => {
     if (!isCredentialValid) {
@@ -314,9 +311,7 @@ const AddCredentialDialog: React.FC<AddCredentialDialogProps> = ({
                       variant="outline"
                       onClick={handleTestCredentials}
                       disabled={
-                        !isFormValid ||
-                        isTestingCredentials ||
-                        isCredentialLoading
+                        !isFormValid || isTestingCredentials || credIsLoading
                       }
                     >
                       {isTestingCredentials ? (
@@ -339,11 +334,11 @@ const AddCredentialDialog: React.FC<AddCredentialDialogProps> = ({
                 disabled={
                   !isFormValid ||
                   !isCredentialValid ||
-                  isCredentialLoading ||
+                  credIsLoading ||
                   isTestingCredentials
                 }
               >
-                {isCredentialLoading ? (
+                {credIsLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Adding...

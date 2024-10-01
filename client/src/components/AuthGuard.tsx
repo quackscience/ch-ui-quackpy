@@ -1,12 +1,12 @@
 // src/components/AuthGuard.tsx
 import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 //import LoadingScreen from "./LoadingScreen";
 
 const AuthGuard: React.FC = () => {
-  const { user, checkAuth } = useAuthStore();
+  const { user, checkAuth } = useAppStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);

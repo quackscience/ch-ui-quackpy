@@ -8,8 +8,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Github, ExternalLink, Terminal, BookOpen } from "lucide-react";
-import useAuthStore from "@/stores/user.store";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 import { motion } from "framer-motion";
 import { bgGradientByInitials } from "@/lib/helpers";
 
@@ -61,8 +60,7 @@ interface HomeTabCard {
 }
 
 const HomeTab = () => {
-  const { addTab } = useTabStore();
-  const { user } = useAuthStore();
+  const { addTab, user } = useAppStore();
 
   const handleAction = (card: HomeTabCard) => {
     if (card.link) {
@@ -72,6 +70,7 @@ const HomeTab = () => {
         type: "sql",
         title: "Start Query",
         content: "",
+        databaseData: []
       });
     } else {
       console.log(`Action for ${card.title}`);

@@ -4,23 +4,47 @@ import MetricItemComponent from "@/components/metrics/MetricItemComponent";
 import MetricsNavigationMenu from "@/components/metrics/MetricsNavigationMenu";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import useAppStore from "@/stores/appStore";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function MetricsOverview() {
   const location = useLocation();
   const navigate = useNavigate();
   let scope = new URLSearchParams(location.search).get("scope");
+  const { user, isConnected } = useAppStore();
+  const activeCredential = user?.activeClickhouseCredential;
+  const [isLocalHostInstance, setIsLocalHostInstance] = React.useState(false);
 
   useEffect(() => {
+    if (!isConnected) {
+      toast.error(
+        "The ClickHouse server is not connected. Please check your connection and try again."
+      );
+      navigate("/");
+    }
+
+    if (!activeCredential) {
+      toast.error("No active credential found");
+      navigate("/credentials");
+    }
+
+    if (
+      activeCredential?.host.includes("localhost") ||
+      activeCredential?.host.includes("127.0.0.1")
+    ) {
+      setIsLocalHostInstance(true);
+    }
+
     if (scope) {
-      const metric = metrics.find((m) => m.scope === m.scope);
+      const metric = metrics.find((m) => m.scope === scope);
       if (!metric) {
         navigate("/metrics?scope=overview");
         toast.error("Invalid metric scope");
       }
     } else {
-      scope === "overview";
+      scope = "overview";
     }
-  }, [scope, navigate]);
+  }, [scope, navigate, activeCredential, isConnected]);
 
   const currentMetric = scope
     ? metrics.find((m) => m.scope === scope)
@@ -76,6 +100,16 @@ function MetricsOverview() {
     <div className="min-h-screen">
       <MetricsNavigationMenu />
       <main className="container mx-auto pb-12">
+        {isLocalHostInstance && (
+          <Alert className="my-4" variant="warning">
+            <AlertTitle>Local Instance Detected</AlertTitle>
+            <AlertDescription>
+              We have detected that you are using a local instance of Click
+              House. There are some metrics that may not be available due to the
+              limitations of the local instance.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="mb-8">
           <div>
             <div className="flex items-center space-x-4">

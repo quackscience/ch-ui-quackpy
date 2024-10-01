@@ -1,11 +1,11 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/Sidebar"; // Update this import path as needed
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { CommandMenu } from "@/components/CommandMenu";
 
 const Layout: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppStore();
 
   return (
     <div className="flex h-screen overflow-hidden">

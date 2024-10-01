@@ -9,6 +9,7 @@ const {
   getClickHouseFunctions,
   getKeywords,
   getDatabaseTableViewMetrics,
+  getConnectionHealth,
 } = require("../controllers/chUiQueries.controller");
 
 router.get("/databases", isAuthenticated, getDatabasesTablesAndQueries);
@@ -16,5 +17,6 @@ router.get("/intellisense", isAuthenticated, getIntellisense);
 router.get("/functions", isAuthenticated, getClickHouseFunctions);
 router.get("/keywords", isAuthenticated, getKeywords);
 router.get("/metrics", isAuthenticated, getDatabaseTableViewMetrics);
+router.get("/health", isAuthenticated, getConnectionHealth);
 
 module.exports = router;

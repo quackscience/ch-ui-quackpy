@@ -9,13 +9,13 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useNavigate } from "react-router-dom";
-import useAuthStore from "@/stores/user.store";
+import useAppstore from "@/stores/appStore";
 import { useTheme } from "@/components/theme-provider";
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { logout, user } = useAuthStore();
+  const { logout, user } = useAppstore();
   const { setTheme } = useTheme();
 
   useEffect(() => {

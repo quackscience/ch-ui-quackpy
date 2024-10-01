@@ -20,7 +20,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -39,7 +39,7 @@ const AddOrganizationDialog: React.FC<AddOrganizationDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { addOrganization } = useOrganizationStore();
+  const { addOrganization } = useAppStore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

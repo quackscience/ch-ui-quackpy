@@ -18,30 +18,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import useOrganizationStore from "@/stores/organization.store";
-import useAuthStore from "@/stores/user.store";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 
 export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
   const {
+    user,
     organizations,
     fetchOrganizations,
-    isLoading: isOrgLoading,
-    error: orgError,
-  } = useOrganizationStore();
-  const {
     availableCredentials,
     fetchAvailableCredentials,
-    isLoading: isCredLoading,
-    error: credError,
-  } = useClickHouseCredentialStore();
-  const {
     setCurrentOrganization,
     setCurrentCredential,
-    getActiveOrganization,
-    getActiveCredential,
-  } = useAuthStore();
+    orgIsLoading,
+    credIsLoading,
+    orgError,
+    credError,
+  } = useAppStore();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tempOrgValue, setTempOrgValue] = useState("");
@@ -70,36 +63,32 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
   useEffect(() => {
     if (dialogOpen) {
       fetchOrganizationsAndHandleErrors();
-      const activeOrg = getActiveOrganization();
-      const activeCred = getActiveCredential();
-
-      if (activeOrg) {
-        setTempOrgValue(activeOrg._id);
-        fetchAvailableCredentialsAndHandleErrors(activeOrg._id);
+      if (user?.activeOrganization) {
+        setTempOrgValue(user.activeOrganization._id);
+        fetchAvailableCredentialsAndHandleErrors(user.activeOrganization._id);
       }
-      if (activeCred) {
-        setTempCredValue(activeCred._id);
+      if (user?.activeClickhouseCredential) {
+        setTempCredValue(user.activeClickhouseCredential._id);
       }
     }
   }, [
     dialogOpen,
-    getActiveOrganization,
-    getActiveCredential,
+    user,
     fetchOrganizationsAndHandleErrors,
     fetchAvailableCredentialsAndHandleErrors,
   ]);
 
   useEffect(() => {
-    if (orgError && !isOrgLoading) {
+    if (orgError && !orgIsLoading) {
       toast.error(`Organization error: ${orgError}`);
     }
-  }, [orgError, isOrgLoading]);
+  }, [orgError, orgIsLoading]);
 
   useEffect(() => {
-    if (credError && !isCredLoading) {
+    if (credError && !credIsLoading) {
       toast.error(`Credential error: ${credError}`);
     }
-  }, [credError, isCredLoading]);
+  }, [credError, credIsLoading]);
 
   const handleDialogOpen = () => {
     setDialogOpen(true);
@@ -143,9 +132,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
   };
 
   const noCredentialsAvailable =
-    availableCredentials.length === 0 && tempOrgValue !== "" && !isCredLoading;
-
-  const activeOrg = getActiveOrganization();
+    availableCredentials?.length === 0 && tempOrgValue !== "" && !credIsLoading;
 
   // Determine if there are no organizations or no credentials
   const noOrganizations = organizations.length === 0;
@@ -163,7 +150,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
         {isExpanded && (
           <>
             <span className="truncate">
-              {activeOrg?.name || "Select Organization"}
+              {user?.activeOrganization?.name || "Select Organization"}
             </span>
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </>
@@ -186,7 +173,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
               <Select
                 value={tempOrgValue}
                 onValueChange={handleOrgSelect}
-                disabled={isOrgLoading || isSaving || noOrganizations}
+                disabled={orgIsLoading || isSaving || noOrganizations}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select organization" />
@@ -208,7 +195,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
                 value={tempCredValue}
                 onValueChange={handleCredSelect}
                 disabled={
-                  isCredLoading ||
+                  credIsLoading ||
                   !tempOrgValue ||
                   noCredentialsAvailable ||
                   isSaving
@@ -218,7 +205,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
                   <SelectValue placeholder="Select credential" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCredentials.map((cred) => (
+                  {availableCredentials?.map((cred) => (
                     <SelectItem key={cred._id} value={cred._id}>
                       {cred.name}
                     </SelectItem>
@@ -227,7 +214,6 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
               </Select>
             </div>
 
-            {/* Existing Alert for No Credentials Available */}
             {noCredentialsAvailable && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -237,7 +223,6 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
               </Alert>
             )}
 
-            {/* New General Alert for No Organizations or Credentials */}
             {showGeneralAlert && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -258,8 +243,8 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
                 !tempOrgValue ||
                 !tempCredValue ||
                 noCredentialsAvailable ||
-                isOrgLoading ||
-                isCredLoading ||
+                orgIsLoading ||
+                credIsLoading ||
                 isSaving ||
                 noOrganizations
               }

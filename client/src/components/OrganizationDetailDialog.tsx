@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import useOrganizationStore from "@/stores/organization.store";
+import useAppStore from "@/stores/appStore";
 import {
   Building2,
   Users,
@@ -49,7 +49,7 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { selectedOrganization } = useOrganizationStore();
+  const { selectedOrganization } = useAppStore();
 
   if (!selectedOrganization) return null;
 

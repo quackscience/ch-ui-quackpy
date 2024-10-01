@@ -25,14 +25,14 @@ import {
 } from "lucide-react";
 
 import Logo from "/logo.png";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import OrganizationCredentialSelector from "@/components/OrganizationCredentialSelector";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getInitials, bgColorsByInitials } from "@/lib/helpers";
 
 const Sidebar = () => {
-  const { user, logout, admin } = useAuthStore();
+  const { user, logout } = useAppStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -91,7 +91,7 @@ const Sidebar = () => {
 
       <ScrollArea className="flex-grow">
         <nav className="space-y-2 p-2">
-          {admin() && (
+          {user?.role === "admin" && (
             <Link
               to="/admin"
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${

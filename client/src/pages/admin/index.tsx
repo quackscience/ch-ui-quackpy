@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 function AdminPage() {
-  const { checkAuth, user, authIsLoading } = useAuthStore();
+  const { checkAuth, user, authIsLoading } = useAppStore();
   const navigate = useNavigate();
 
   useEffect(() => {

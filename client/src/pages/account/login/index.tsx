@@ -20,7 +20,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -34,7 +34,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { login, user, authIsLoading, error } = useAuthStore();
+  const { login, user, authIsLoading } = useAppStore();
   const [localError, setLocalError] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -111,7 +111,7 @@ function LoginPage() {
               />
               {localError && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{}</AlertDescription>
                 </Alert>
               )}
               <Button type="submit" className="w-full" disabled={authIsLoading}>
@@ -123,7 +123,10 @@ function LoginPage() {
         <CardFooter className="flex justify-center">
           <p>
             Don't have an account?{" "}
-            <Link to="/account/register" className="text-blue-500 hover:underline">
+            <Link
+              to="/account/register"
+              className="text-blue-500 hover:underline"
+            >
               Sign up
             </Link>
           </p>

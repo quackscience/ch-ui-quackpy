@@ -337,10 +337,30 @@ const getDatabaseTableViewMetrics = async (req, res) => {
   return executeClickHouseQuery(req, res, queryFunc);
 };
 
+const getConnectionHealth = async (req, res) => {
+  const queryFunc = async (client) => {
+    const isHealthy = await client.ping();
+
+    if (isHealthy.success) {
+      const query = `
+        SELECT version() AS version, uptime() AS uptime, now() AS current_time;
+    `;
+      const result = await client.query({ query, format: "JSONEachRow" });
+      const resultJSON = await result.json();
+      return resultJSON;
+    } else {
+      return { error: "Connection is not healthy" };
+    }
+  };
+
+  return executeClickHouseQuery(req, res, queryFunc);
+};
+
 module.exports = {
   getDatabasesTablesAndQueries,
   getIntellisense,
   getClickHouseFunctions,
   getKeywords,
   getDatabaseTableViewMetrics,
+  getConnectionHealth,
 };

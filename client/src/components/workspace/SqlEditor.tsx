@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import { useTheme } from "@/components/theme-provider";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 import {
   initializeMonacoGlobally,
   createMonacoEditor,
@@ -27,7 +27,7 @@ interface SQLEditorProps {
 
 const SQLEditor: React.FC<SQLEditorProps> = ({ tabId }) => {
   const { runQuery, getTabById, updateTabContent, fetchDatabaseData } =
-    useTabStore();
+    useAppStore();
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const tab = getTabById(tabId);

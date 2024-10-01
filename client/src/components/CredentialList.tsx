@@ -45,9 +45,9 @@ import {
   Building2,
 } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
-import useClickHouseCredentialStore from "@/stores/clickHouseCredentials.store";
-import useAuthStore from "@/stores/user.store";
-import useOrganizationStore from "@/stores/organization.store";
+
+import useAppStore from "@/stores/appStore";
+
 import { ClickHouseCredential } from "@/types/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -75,15 +75,17 @@ const CredentialList: React.FC<CredentialListProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
 
-  const { getAllUsers, allUsers } = useAuthStore();
-  const { organizations, fetchOrganizations } = useOrganizationStore();
   const {
+    organizations,
+    getAllUsers,
+    allUsers,
+    fetchOrganizations,
     assignUserToCredential,
     revokeUserFromCredential,
     assignCredentialToOrganization,
     revokeCredentialFromOrganization,
     fetchCredentials,
-  } = useClickHouseCredentialStore();
+  } = useAppStore();
 
   useEffect(() => {
     getAllUsers();
@@ -91,9 +93,9 @@ const CredentialList: React.FC<CredentialListProps> = ({
       fetchOrganizations();
     } catch (error) {
       if (error instanceof Error) {
-        toast.error(error.message)
+        toast.error(error.message);
       } else {
-        toast.error("Failed to fetch organizations")
+        toast.error("Failed to fetch organizations");
       }
     }
     setCredentialToManage(credentials[0]);

@@ -7,8 +7,7 @@ import {
 } from "@/components/ui/resizable";
 import WorkspaceTabs from "@/components/workspace/WorkspaceTabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import useTabStore from "@/stores/tabs.store";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import CreateTable from "@/components/CreateTable";
 import CreateDatabase from "@/components/CreateDatabase";
 import { useNavigate } from "react-router-dom";
@@ -16,52 +15,53 @@ import { toast } from "sonner";
 
 function WorkspacePage() {
   const navigate = useNavigate();
-  const { error, resetTabs } = useTabStore();
-  const { getActiveOrganization, getActiveCredential } = useAuthStore();
-  const [activeOrg, setActiveOrg] = useState(getActiveOrganization());
-  const [activeCred, setActiveCred] = useState(getActiveCredential());
+  const { user, error, resetTabs, isConnected, authError } = useAppStore();
+
+  const [activeOrgId, setActiveOrgId] = useState(user?.activeOrganization?._id);
+  const [activeCredId, setActiveCredId] = useState(
+    user?.activeClickhouseCredential?._id
+  );
 
   const handleOrgCredChange = useCallback(() => {
-    const currentOrg = getActiveOrganization();
-    const currentCred = getActiveCredential();
+    const currentOrgId = user?.activeOrganization?._id;
+    const currentCredId = user?.activeClickhouseCredential?._id;
 
-    if (
-      currentOrg?._id !== activeOrg?._id ||
-      currentCred?._id !== activeCred?._id
-    ) {
+    if (currentOrgId !== activeOrgId || currentCredId !== activeCredId) {
       console.log("Organization or credential changed. Reloading workspace...");
-      setActiveOrg(currentOrg);
-      setActiveCred(currentCred);
+      setActiveOrgId(currentOrgId);
+      setActiveCredId(currentCredId);
       resetTabs();
       // Add any other reload logic here
       // For example, you might want to refetch the database structure:
       // fetchDatabaseStructure();
     }
-  }, [
-    getActiveOrganization,
-    getActiveCredential,
-    activeOrg,
-    activeCred,
-    resetTabs,
-  ]);
+  }, [user, activeOrgId, activeCredId, resetTabs]);
 
   useEffect(() => {
-    const currentOrg = getActiveOrganization();
-    const currentCred = getActiveCredential();
-    if (!currentOrg || !currentCred){
-      navigate('/organizations')
-      toast.warning("You need to have a Selected Organization and Selected Credential to access the workspace")
-
+    if (!user?.activeOrganization || !user?.activeClickhouseCredential) {
+      return;
     }
-      // Initial check
-      handleOrgCredChange();
+    if (!isConnected) {
+      navigate("/");
+      toast.error(
+        "The ClickHouse server is not connected. Please check your connection and try again."
+      );
+    }
+    if (!user.activeOrganization || !user.activeClickhouseCredential) {
+      navigate("/organizations");
+      toast.warning(
+        "You need to have a Selected Organization and Selected Credential to access the workspace"
+      );
+    }
+    // Initial check
+    handleOrgCredChange();
+  }, [handleOrgCredChange, isConnected, navigate, user]);
 
-    // Subscribe to changes in the auth store
-    const unsubscribe = useAuthStore.subscribe(handleOrgCredChange);
-
-    // Cleanup subscription on component unmount
-    return () => unsubscribe();
-  }, [handleOrgCredChange]);
+  useEffect(() => {
+    if (authError) {
+      toast.error(`Authentication error: ${authError}`);
+    }
+  }, [authError]);
 
   if (error) {
     return (

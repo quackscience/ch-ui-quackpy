@@ -21,7 +21,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import useAuthStore from "@/stores/user.store";
+import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
 
 const registerSchema = z
@@ -51,7 +51,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const { register, authIsLoading, user } = useAuthStore();
+  const { register, authIsLoading, user } = useAppStore();
   const [localError, setLocalError] = React.useState<string | null>(null);
 
   const form = useForm<RegisterFormValues>({

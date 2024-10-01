@@ -1,26 +1,30 @@
-// DatabaseExplorer.tsx
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCcw, Search, SearchX } from "lucide-react";
-import useTabStore from "@/stores/tabs.store";
-import TreeNode from "./TreeNode";
+import useAppStore from "@/stores/appStore";
+import TreeNode, { TreeNodeData } from "./TreeNode";
+
+interface DatabaseNode {
+  name: string;
+  children: DatabaseNode[];
+}
 
 const DatabaseExplorer: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { databaseData, error, fetchDatabaseData, isLoadingDataBase } =
-    useTabStore();
+  const { databaseData, tabError, fetchDatabaseData, isLoadingDatabase } =
+    useAppStore();
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return databaseData;
     return databaseData.filter(
-      (node) =>
+      (node: DatabaseNode) =>
         node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         node.children.some(
-          (child) =>
+          (child: DatabaseNode) =>
             child.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            child.children?.some((grandchild) =>
+            child.children?.some((grandchild: DatabaseNode) =>
               grandchild.name.toLowerCase().includes(searchTerm.toLowerCase())
             )
         )
@@ -47,11 +51,11 @@ const DatabaseExplorer: React.FC = () => {
             variant="outline"
             onClick={refreshDatabases}
             className="flex items-center"
-            disabled={isLoadingDataBase}
+            disabled={isLoadingDatabase}
           >
             <RefreshCcw
               className={`w-4 h-4 ml-1 ${
-                isLoadingDataBase ? "animate-spin" : ""
+                isLoadingDatabase ? "animate-spin" : ""
               }`}
             />
           </Button>
@@ -79,14 +83,14 @@ const DatabaseExplorer: React.FC = () => {
       </div>
       <ScrollArea>
         <div className="p-3">
-          {isLoadingDataBase ? (
+          {isLoadingDatabase ? (
             <div className="p-4 text-muted-foreground w-full flex flex-col items-center justify-center">
               <RefreshCcw className="w-8 h-8 mx-auto animate-spin" />
               <p className="text-center mt-2">Loading...</p>
             </div>
-          ) : error ? (
+          ) : tabError ? (
             <div className="p-4 text-red-500 w-full flex flex-col items-center justify-center">
-              <p className="text-center mt-2">{error}</p>
+              <p className="text-center mt-2">{tabError}</p>
               <Button
                 onClick={refreshDatabases}
                 variant="outline"
@@ -96,10 +100,24 @@ const DatabaseExplorer: React.FC = () => {
               </Button>
             </div>
           ) : filteredData.length > 0 ? (
-            filteredData.map((node, index) => (
+            filteredData.map((node: DatabaseNode) => (
               <TreeNode
-                key={index}
-                node={node}
+                node={{
+                  ...node,
+                  type: "database",
+                  children: node.children.map((child) => ({
+                    ...child,
+                    type: "table", // or the appropriate type for child nodes
+                    children: child.children?.map((grandchild) => ({
+                      ...grandchild,
+                      type: "view", // or the appropriate type for grandchild nodes
+                      children: grandchild.children?.map((greatGrandchild) => ({
+                        ...greatGrandchild,
+                        type: "view", // or the appropriate type for great-grandchild nodes
+                      })) as TreeNodeData[],
+                    })) as TreeNodeData[],
+                  })) as TreeNodeData[],
+                }}
                 level={0}
                 searchTerm={searchTerm}
                 parentDatabaseName={node.name}

@@ -5,7 +5,7 @@ import {
   ResizablePanelGroup,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import useTabStore from "@/stores/tabs.store";
+import useAppStore from "@/stores/appStore";
 import CHUITable from "../CHUITable";
 import { Loader2 } from "lucide-react";
 
@@ -27,7 +27,7 @@ interface QueryResults {
 }
 
 const SqlTab: React.FC<SqlTabProps> = ({ tabId }) => {
-  const { getTabById } = useTabStore();
+  const { getTabById } = useAppStore();
   const tab = getTabById(tabId);
   const [timer, setTimer] = useState<number>(0); // Timer state in seconds
   const [isRunning, setIsRunning] = useState<boolean>(false); // To track the timer state

@@ -1,5 +1,5 @@
 import axios from "axios";
-import useAuthStore from "../stores/user.store";
+import useAppStore from "../stores/appStore";
 
 const api = axios.create({
   baseURL: "http://localhost:5124/api/v1", // Adjust this to match your backend URL
@@ -26,7 +26,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // If refresh fails, log out the user
-        useAuthStore.getState().logout();
+        useAppStore.getState().logout();
         throw refreshError;
       }
     }
