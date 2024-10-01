@@ -70,7 +70,7 @@ const HomeTab = () => {
         type: "sql",
         title: "Start Query",
         content: "",
-        databaseData: []
+
       });
     } else {
       console.log(`Action for ${card.title}`);

@@ -86,7 +86,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         type: "information",
         title: title,
         content: { query: "", database, table },
-        databaseData: [],
       });
     }
   };
@@ -104,7 +103,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           type: "sql",
           title: title,
           content: { query, database: database || "", table },
-          databaseData: [],
         });
       }
     },
@@ -122,7 +120,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         type: "sql",
         title: title,
         content: { query: node.query || "", database: "", table: "" },
-        databaseData: [],
       });
     }
   };

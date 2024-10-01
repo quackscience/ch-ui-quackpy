@@ -41,18 +41,22 @@ import {
   bgGradientByInitials,
 } from "@/lib/helpers";
 
+import { ClickHouseCredential } from "@/types/types";
+
 interface CredentialDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  cred: ClickHouseCredential;
 }
 
 const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
   isOpen,
   onClose,
+  cred,
 }) => {
-  const { selectedCredential, allUsers, organizations } = useAppstore();
+  const { allUsers, organizations } = useAppstore();
 
-  if (!selectedCredential) return null;
+  if (!cred) return null;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
@@ -64,15 +68,15 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
     });
   };
 
-  // Extract the IDs from selectedCredential.users
-  const selectedUserIds = selectedCredential.users.map((user) => user._id);
+  // Extract the IDs from cred.users
+  const selectedUserIds = cred.users.map((user) => user._id);
 
   const credentialUsers = allUsers.filter((user) =>
     selectedUserIds.includes(user._id)
   );
 
-  // Extract the IDs from selectedCredential.allowedOrganizations
-  const selectedOrganizationIds = selectedCredential.allowedOrganizations.map(
+  // Extract the IDs from cred.allowedOrganizations
+  const selectedOrganizationIds = cred.allowedOrganizations.map(
     (org) => org._id
   );
 
@@ -91,17 +95,16 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle
             className={`text-2xl font-bold items-center gap-2 ${bgGradientByInitials(
-              getInitials(selectedCredential.name)
+              getInitials(cred.name)
             )} text-transparent bg-clip-text`}
           >
-            {selectedCredential.name}
+            {cred.name}
           </DialogTitle>
           <DialogDescription
             aria-description="Details about the ClickHouse credential"
             id="credential-details"
           >
-            Detailed information about {selectedCredential.name} ClickHouse
-            credential.
+            Detailed information about {cred.name} ClickHouse credential.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-4">
@@ -110,13 +113,11 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
               <div className="flex items-center space-x-4 mb-4">
                 <DatabaseZap className="h-10 w-10 text-blue-500" />
                 <div>
-                  <h3 className="text-lg font-semibold">
-                    {selectedCredential.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold">{cred.name}</h3>
                   <div className="text-sm text-muted-foreground flex items-center gap-1">
                     <AtSign className="h-4 w-4" aria-hidden="true" />
                     <span aria-label="Credential host and port">
-                      {selectedCredential.host}:{selectedCredential.port}
+                      {cred.host}:{cred.port}
                     </span>
                   </div>
                 </div>
@@ -130,9 +131,7 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 text-sm cursor-help">
                         <Hash className="h-4 w-4" aria-hidden="true" />
-                        <span aria-label="Credential ID">
-                          ID: {selectedCredential._id}
-                        </span>
+                        <span aria-label="Credential ID">ID: {cred._id}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -144,9 +143,7 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Number of users">Users: </span>
-                  <Badge variant="secondary">
-                    {selectedCredential.users.length}
-                  </Badge>
+                  <Badge variant="secondary">{cred.users.length}</Badge>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
@@ -155,21 +152,21 @@ const CredentialDetailDialog: React.FC<CredentialDetailDialogProps> = ({
                     Allowed Organizations:{" "}
                   </span>
                   <Badge variant="secondary">
-                    {selectedCredential.allowedOrganizations.length}
+                    {cred.allowedOrganizations.length}
                   </Badge>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Creation date">
-                    Created: {formatDate(selectedCredential.createdAt)}
+                    Created: {formatDate(cred.createdAt)}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Last update date">
-                    Updated: {formatDate(selectedCredential.updatedAt)}
+                    Updated: {formatDate(cred.updatedAt)}
                   </span>
                 </div>
               </div>

@@ -96,7 +96,6 @@ const SQLEditor: React.FC<SQLEditorProps> = ({ tabId }) => {
       const model = monacoRef.current.getModel();
       if (model) {
         const selection = monacoRef.current.getSelection();
-        // console.log the selected text
         if (selection && !selection.isEmpty()) {
           return model.getValueInRange(selection);
         }

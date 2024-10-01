@@ -195,7 +195,7 @@ const CreateDatabase = () => {
         title: databaseName,
         content: { query: "", database: databaseName, table: "" },
         type: "information",
-        databaseData: [],
+
       });
 
       // Reset all fields

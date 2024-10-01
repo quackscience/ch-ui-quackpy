@@ -1,5 +1,3 @@
-// CredentialList component
-
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
@@ -75,7 +73,6 @@ const CredentialList: React.FC<CredentialListProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
 
-
   const {
     organizations,
     getAllUsers,
@@ -89,68 +86,69 @@ const CredentialList: React.FC<CredentialListProps> = ({
   } = useAppStore();
 
   useEffect(() => {
-    getAllUsers();
-    try {
-      fetchOrganizations();
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to fetch organizations");
+    const fetchData = async () => {
+      try {
+        await getAllUsers();
+        await fetchOrganizations();
+      } catch (error) {
+        if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("Failed to fetch data");
+        }
       }
-    }
-    setCredentialToManage(credentials[0]);
+    };
+    fetchData();
   }, [getAllUsers, fetchOrganizations]);
 
   const credentialUserIds = useMemo(() => {
-    if (!credentialToManage) return new Set<any>();
+    if (!credentialToManage) return new Set<string>();
     return new Set(credentialToManage.users.map((user: any) => user._id));
   }, [credentialToManage]);
 
   const credentialOrgIds = useMemo(() => {
-    if (!credentialToManage) return new Set<any>();
+    if (!credentialToManage) return new Set<string>();
     return new Set(
       credentialToManage.allowedOrganizations.map((org: any) => org._id)
     );
   }, [credentialToManage]);
 
   const usersNotInCredential = useMemo(() => {
-    if (!credentialToManage) return [];
+    if (!credentialToManage || !allUsers) return [];
     return allUsers.filter((user) => !credentialUserIds.has(user._id));
-  }, [allUsers, credentialToManage]);
+  }, [allUsers, credentialUserIds, credentialToManage]);
 
   const usersInCredential = useMemo(() => {
-    if (!credentialToManage) return [];
-    return allUsers.filter((user) =>
-      credentialToManage.users.map((u: any) => u._id).includes(user._id)
-    );
-  }, [allUsers, credentialToManage]);
+    if (!credentialToManage || !allUsers) return [];
+    return allUsers.filter((user) => credentialUserIds.has(user._id));
+  }, [allUsers, credentialUserIds, credentialToManage]);
 
   const orgsNotInCredential = useMemo(() => {
-    if (!credentialToManage) return [];
+    if (!credentialToManage || !organizations) return [];
     return organizations.filter((org) => !credentialOrgIds.has(org._id));
-  }, [organizations, credentialToManage]);
+  }, [organizations, credentialOrgIds, credentialToManage]);
 
   const orgsInCredential = useMemo(() => {
-    if (!credentialToManage) return [];
-    return organizations.filter((org) =>
-      credentialToManage.allowedOrganizations
-        .map((o: any) => o._id)
-        .includes(org._id)
-    );
-  }, [organizations, credentialToManage]);
+    if (!credentialToManage || !organizations) return [];
+    return organizations.filter((org) => credentialOrgIds.has(org._id));
+  }, [organizations, credentialOrgIds, credentialToManage]);
 
   const handleDeleteClick = (cred: ClickHouseCredential) => {
     setCredentialToManage(cred);
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (credentialToManage) {
-      onDelete(credentialToManage);
-      setDeleteDialogOpen(false);
-      setCredentialToManage(null);
-      fetchCredentials();
+      try {
+        await onDelete(credentialToManage);
+        setDeleteDialogOpen(false);
+        setCredentialToManage(null);
+        await fetchCredentials();
+        toast.success("Credential deleted successfully");
+      } catch (error) {
+        toast.error("Failed to delete credential");
+      }
     }
   };
 
@@ -179,15 +177,11 @@ const CredentialList: React.FC<CredentialListProps> = ({
       try {
         await assignUserToCredential(credentialToManage._id, selectedUserId);
         setAddUserDialogOpen(false);
-        setCredentialToManage(null);
         setSelectedUserId("");
+        await fetchCredentials();
         toast.success("User assigned to credential successfully");
       } catch (error) {
-        if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("Failed to assign user to credential");
-        }
+        toast.error("Failed to assign user to credential");
       }
     }
   };
@@ -197,15 +191,11 @@ const CredentialList: React.FC<CredentialListProps> = ({
       try {
         await revokeUserFromCredential(credentialToManage._id, selectedUserId);
         setRemoveUserDialogOpen(false);
-        setCredentialToManage(null);
         setSelectedUserId("");
+        await fetchCredentials();
         toast.success("User revoked from credential successfully");
       } catch (error) {
-        if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("Failed to revoke user from credential");
-        }
+        toast.error("Failed to revoke user from credential");
       }
     }
   };
@@ -217,18 +207,13 @@ const CredentialList: React.FC<CredentialListProps> = ({
           credentialToManage._id,
           selectedOrgId
         );
-        toast.success("Credential assigned to organization successfully");
         setAddOrgDialogOpen(false);
-        setCredentialToManage(null);
         setSelectedOrgId("");
-        fetchCredentials();
-        fetchOrganizations();
+        await fetchCredentials();
+        await fetchOrganizations();
+        toast.success("Credential assigned to organization successfully");
       } catch (error) {
-        if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("Failed to assign credential to organization");
-        }
+        toast.error("Failed to assign credential to organization");
       }
     }
   };
@@ -241,15 +226,12 @@ const CredentialList: React.FC<CredentialListProps> = ({
           selectedOrgId
         );
         setRemoveOrgDialogOpen(false);
-        setCredentialToManage(null);
         setSelectedOrgId("");
+        await fetchCredentials();
+        await fetchOrganizations();
         toast.success("Credential revoked from organization successfully");
       } catch (error) {
-        if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("Failed to revoke credential from organization");
-        }
+        toast.error("Failed to revoke credential from organization");
       }
     }
   };
@@ -344,6 +326,7 @@ const CredentialList: React.FC<CredentialListProps> = ({
             </TableBody>
           </Table>
 
+          {/* Delete Credential Dialog */}
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
@@ -371,6 +354,7 @@ const CredentialList: React.FC<CredentialListProps> = ({
             </DialogContent>
           </Dialog>
 
+          {/* Add User to Credential Dialog */}
           <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
             <DialogContent>
               <DialogHeader>
@@ -379,8 +363,12 @@ const CredentialList: React.FC<CredentialListProps> = ({
                   Select a user to add to "{credentialToManage?.name}".
                 </DialogDescription>
               </DialogHeader>
-              <Select onValueChange={setSelectedUserId} value={selectedUserId}>
-                <SelectTrigger disabled={usersNotInCredential.length === 0}>
+              <Select
+                onValueChange={setSelectedUserId}
+                value={selectedUserId}
+                disabled={usersNotInCredential.length === 0}
+              >
+                <SelectTrigger>
                   <SelectValue
                     placeholder={
                       usersNotInCredential.length === 0
@@ -420,6 +408,7 @@ const CredentialList: React.FC<CredentialListProps> = ({
             </DialogContent>
           </Dialog>
 
+          {/* Remove User from Credential Dialog */}
           <Dialog
             open={removeUserDialogOpen}
             onOpenChange={setRemoveUserDialogOpen}
@@ -431,8 +420,12 @@ const CredentialList: React.FC<CredentialListProps> = ({
                   Select a user to remove from "{credentialToManage?.name}".
                 </DialogDescription>
               </DialogHeader>
-              <Select onValueChange={setSelectedUserId} value={selectedUserId}>
-                <SelectTrigger disabled={usersInCredential.length === 0}>
+              <Select
+                onValueChange={setSelectedUserId}
+                value={selectedUserId}
+                disabled={usersInCredential.length === 0}
+              >
+                <SelectTrigger>
                   <SelectValue
                     placeholder={
                       usersInCredential.length === 0
@@ -473,6 +466,7 @@ const CredentialList: React.FC<CredentialListProps> = ({
             </DialogContent>
           </Dialog>
 
+          {/* Add Organization to Credential Dialog */}
           <Dialog open={addOrgDialogOpen} onOpenChange={setAddOrgDialogOpen}>
             <DialogContent>
               <DialogHeader>
@@ -481,8 +475,12 @@ const CredentialList: React.FC<CredentialListProps> = ({
                   Select an organization to add to "{credentialToManage?.name}".
                 </DialogDescription>
               </DialogHeader>
-              <Select onValueChange={setSelectedOrgId} value={selectedOrgId}>
-                <SelectTrigger disabled={orgsNotInCredential.length === 0}>
+              <Select
+                onValueChange={setSelectedOrgId}
+                value={selectedOrgId}
+                disabled={orgsNotInCredential.length === 0}
+              >
+                <SelectTrigger>
                   <SelectValue
                     placeholder={
                       orgsNotInCredential.length === 0
@@ -520,6 +518,7 @@ const CredentialList: React.FC<CredentialListProps> = ({
             </DialogContent>
           </Dialog>
 
+          {/* Remove Organization from Credential Dialog */}
           <Dialog
             open={removeOrgDialogOpen}
             onOpenChange={setRemoveOrgDialogOpen}
@@ -533,8 +532,12 @@ const CredentialList: React.FC<CredentialListProps> = ({
                   ".
                 </DialogDescription>
               </DialogHeader>
-              <Select onValueChange={setSelectedOrgId} value={selectedOrgId}>
-                <SelectTrigger disabled={orgsInCredential.length === 0}>
+              <Select
+                onValueChange={setSelectedOrgId}
+                value={selectedOrgId}
+                disabled={orgsInCredential.length === 0}
+              >
+                <SelectTrigger>
                   <SelectValue
                     placeholder={
                       orgsInCredential.length === 0

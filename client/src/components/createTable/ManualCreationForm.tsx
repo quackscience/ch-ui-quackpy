@@ -36,7 +36,7 @@ interface ManualCreationFormProps {
   createTableError: string;
   statementCopiedToClipBoard: boolean;
   fieldTypes: string[];
-  databaseData: any[]; // Add this prop
+  databaseData: any[]; // Add this line
 }
 
 const ManualCreationForm: React.FC<ManualCreationFormProps> = ({

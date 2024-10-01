@@ -38,6 +38,7 @@ interface FileUploadFormProps {
   errors: Record<string, string>;
   previewData: any[];
   fields: any[]; // Pass fields to reconstruct meta
+  databaseData: any[]; // Add databaseData property
   onChange: (field: string, value: any) => void;
   onFileChange: (file: File | null) => void;
   onFileTypeChange: (type: "csv" | "json") => void;
@@ -51,7 +52,6 @@ interface FileUploadFormProps {
   onCreateFromFile: () => void;
   createTableError: string;
   isProcessing: boolean;
-  databaseData: any[];
 }
 
 const FileUploadForm: React.FC<FileUploadFormProps> = ({

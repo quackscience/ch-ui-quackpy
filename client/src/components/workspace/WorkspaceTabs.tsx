@@ -157,7 +157,7 @@ export function WorkspaceTabs() {
       title: "Query " +   tabs.length,
       type: "sql",
       content: "",
-      databaseData: [],
+
     });
   }, [tabs.length, addTab]);
 

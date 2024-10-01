@@ -349,6 +349,8 @@ exports.setCurrentCredentialsForUser = [
 
       const credential = await ClickHouseCredential.findById(credentialId);
 
+      console.log(credential);
+
       if (!credential) {
         return errorResponse(
           res,
@@ -369,7 +371,10 @@ exports.setCurrentCredentialsForUser = [
         );
       }
 
+      user.activeClickhouseCredential = credentialId;
+
       await user.save();
+
       res.json({
         credential,
       });

@@ -739,7 +739,6 @@ const CreateTable = () => {
         type: "information",
         title: `${database}.${tableName}`,
         content: { database, table: tableName, query: "" },
-        databaseData: [],
       });
 
       // Reset all fields
@@ -809,8 +808,8 @@ const CreateTable = () => {
                 }}
                 createTableError={createTableError}
                 statementCopiedToClipBoard={statementCopiedToClipBoard}
-                databaseData={databaseData}
                 fieldTypes={[]}
+                databaseData={databaseData}
               />
             </TabsContent>
 

@@ -89,6 +89,7 @@ const useAppStore = create<AppState>()(
             const response = await api.post("/users/me/credential", {
               credentialId,
             });
+
             set((state) => {
               const user = state.user;
               if (user) {
@@ -96,8 +97,7 @@ const useAppStore = create<AppState>()(
                   ...state,
                   user: {
                     ...user,
-                    activeClickhouseCredential:
-                      response.data.credential,
+                    activeClickhouseCredential: response.data.credential,
                   },
                   userIsLoading: false,
                 };
@@ -407,7 +407,6 @@ const useAppStore = create<AppState>()(
             title: "Home",
             content: "",
             type: "home",
-            databaseData: [],
           },
         ],
         activeTabId: "home",
@@ -537,7 +536,6 @@ const useAppStore = create<AppState>()(
                 title: "Home",
                 content: "",
                 type: "home",
-                databaseData: [],
               },
             ],
             activeTabId: "home",

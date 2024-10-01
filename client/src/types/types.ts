@@ -55,7 +55,6 @@ export interface Tab {
   isLoading?: boolean;
   isSaved?: boolean;
   isDirty?: boolean;
-  databaseData: any[];
 }
 
 // Merged AppState Interface
