@@ -186,7 +186,7 @@ const CreateDatabase = () => {
     setCreateDatabaseError("");
 
     try {
-      await runQuery("", sqlStatement);
+      await runQuery(sqlStatement);
       fetchDatabaseData();
       toast.success("Database created successfully!");
 

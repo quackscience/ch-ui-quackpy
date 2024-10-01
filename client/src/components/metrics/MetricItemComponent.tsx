@@ -69,10 +69,13 @@ function MetricItemComponent({ item }: Props) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const result = await runQuery("", item.query);
+      console.log("Running query: ", item.query);
+      const result = await runQuery(item.query);
       setData(result);
+      console.log(result);
       setErrorMessage(null);
     } catch (err: any) {
+      console.error(err);
       setErrorMessage(err.message);
     } finally {
       setLoading(false);
@@ -100,7 +103,6 @@ function MetricItemComponent({ item }: Props) {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <p>Error loading {item.title}</p>
-            {/* copy error message to clipboard */}
             <Button
               className="ml-4 bg-transparent text-red-600 hover:text-red-500 hover:bg-inherit"
               onClick={() => {
@@ -189,9 +191,7 @@ function MetricItemComponent({ item }: Props) {
 
   const renderChart = () => {
     if (!data || !data.data || data.data.length === 0 || !item.chartConfig) {
-      return(
-        <div className="text-muted-foreground font-bold">No data</div>
-      )
+      return <div className="text-muted-foreground font-bold">No data</div>;
     }
 
     let ChartComponent: ComponentType<any>;
@@ -315,7 +315,7 @@ function MetricItemComponent({ item }: Props) {
 
   const renderTable = () => {
     if (!data || !data.data || data.data.length === 0) {
-      return "No data available for table";
+      return <div className="text-muted-foreground font-bold">No data</div>;
     }
     return (
       <CHUITable

@@ -627,7 +627,7 @@ const CreateTable = () => {
 
         try {
           // Execute CREATE TABLE
-          await runQuery("", sqlStatement);
+          await runQuery(sqlStatement);
         } catch (createError: any) {
           setCreateTableError(createError.toString());
           setLoading(false);
@@ -644,7 +644,7 @@ const CreateTable = () => {
         }
 
         try {
-          await runQuery("", insertSQL);
+          await runQuery(insertSQL);
           fetchDatabaseData();
           toast.success("Table created and data inserted successfully!");
 
@@ -731,14 +731,14 @@ const CreateTable = () => {
     setLoading(true);
     setCreateTableError("");
     try {
-      await runQuery("", sqlStatement);
+      await runQuery(sqlStatement);
       fetchDatabaseData();
       toast.success("Table created successfully!");
 
       addTab({
         type: "information",
         title: `${database}.${tableName}`,
-        content: { database, table: tableName },
+        content: { database, table: tableName, query: "" },
         databaseData: [],
       });
 

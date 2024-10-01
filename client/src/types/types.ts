@@ -10,8 +10,8 @@ export interface User {
   active: boolean;
   createdAt: string;
   updatedAt: string;
-  activeOrganization?: Organization;
-  activeClickhouseCredential?: ClickHouseCredential;
+  activeOrganization?: any;
+  activeClickhouseCredential?: any;
 }
 
 // Organization Types
@@ -58,41 +58,25 @@ export interface Tab {
   databaseData: any[];
 }
 
-// Chat Types
-export interface Chat {
-  _id: string;
-  participants: User[];
-  messages: Message[];
-  lastMessage: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface Message {
-  _id: string;
-  sender: User;
-  content: string;
-  timestamp: string;
-}
-
 // Merged AppState Interface
 export interface AppState {
   // Auth State
   user: User | null;
-  allUsers: User[];
+  userIsLoading: boolean;
+  userError: string | null;
   authIsLoading: boolean;
   authError: string | null;
+  allUsers: User[] | null;
 
   // Organization State
   organizations: Organization[];
-  selectedOrganization: Organization | null;
   orgIsLoading: boolean;
   orgError: string | null;
 
   // ClickHouse Credential State
   credentials: ClickHouseCredential[];
-  selectedCredential: ClickHouseCredential | null;
   availableCredentials: ClickHouseCredential[];
+
   credIsLoading: boolean;
   credError: string | null;
 
@@ -118,17 +102,19 @@ export interface AppState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  checkAuth: () => Promise<boolean>;
+
+  // User Actions
   getCurrentUser: () => Promise<void>;
   setCurrentOrganization: (organizationId: string) => Promise<void>;
   setCurrentCredential: (credentialId: string) => Promise<void>;
-  checkAuth: () => Promise<boolean>;
   admin: () => boolean;
   updateUser: (userId: string, userData: Partial<User>) => Promise<void>;
   getAllUsers: () => Promise<void>;
 
   // Organization Actions
   fetchOrganizations: () => Promise<void>;
-  addOrganization: (name: string) => Promise<void>;
+  createOrganization: (name: string) => Promise<void>;
   updateOrganization: (id: string, name: string) => Promise<void>;
   deleteOrganization: (id: string) => Promise<void>;
   addUserToOrganization: (
@@ -177,8 +163,8 @@ export interface AppState {
   updateTabTitle: (id: string, title: string) => void;
   moveTab: (fromIndex: number, toIndex: number) => void;
   getTabById: (id: string) => Tab | undefined;
-  fetchQueries: () => Promise<void>;
-  runQuery: (tabId: string, query: string) => Promise<void>;
+
+  runQuery: (query: string, tabId?: string) => Promise<void>;
   fetchDatabaseData: () => Promise<void>;
   closeCreateTableModal: () => void;
   openCreateTableModal: (database: string) => void;

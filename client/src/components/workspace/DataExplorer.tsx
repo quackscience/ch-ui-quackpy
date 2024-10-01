@@ -122,6 +122,7 @@ const DatabaseExplorer: React.FC = () => {
                 searchTerm={searchTerm}
                 parentDatabaseName={node.name}
                 refreshData={refreshDatabases}
+                key={node.name}
               />
             ))
           ) : (

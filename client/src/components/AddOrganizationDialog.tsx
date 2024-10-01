@@ -1,4 +1,4 @@
-// src/components/AddOrganizationDialog.tsx
+// src/components/CreateOrganizationDialog.tsx
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,16 +30,16 @@ const formSchema = z.object({
     .max(32, "Organization name is too long (max 32 characters)"),
 });
 
-interface AddOrganizationDialogProps {
+interface CreateOrganizationDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const AddOrganizationDialog: React.FC<AddOrganizationDialogProps> = ({
+const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { addOrganization } = useAppStore();
+  const { createOrganization } = useAppStore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,13 +49,13 @@ const AddOrganizationDialog: React.FC<AddOrganizationDialogProps> = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await addOrganization(values.name);
+      await createOrganization(values.name);
       toast.success(`Organization ${values.name} added successfully`);
     } catch (error) {
       if (error instanceof Error) {
-        toast.error(error.message)
+        toast.error(error.message);
       } else {
-        toast.error("Failed to add organization")
+        toast.error("Failed to add organization");
       }
     }
     form.reset();
@@ -93,4 +93,4 @@ const AddOrganizationDialog: React.FC<AddOrganizationDialogProps> = ({
   );
 };
 
-export default AddOrganizationDialog;
+export default CreateOrganizationDialog;

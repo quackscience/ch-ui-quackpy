@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import useAppStore from "@/stores/appStore";
+
 import {
   Building2,
   Users,
@@ -40,19 +40,21 @@ import {
   bgGradientByInitials,
 } from "@/lib/helpers";
 
+import { Organization } from "@/types/types";
+
 interface OrganizationDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  organization: Organization | null;
 }
 
 const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
   isOpen,
   onClose,
+  organization,
 }) => {
-  const { selectedOrganization } = useAppStore();
-
-  if (!selectedOrganization) return null;
-
+  if (!organization) return null;
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString(undefined, {
       year: "numeric",
@@ -74,17 +76,16 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
         <DialogHeader>
           <DialogTitle
             className={`text-2xl font-bold items-center gap-2 ${bgGradientByInitials(
-              getInitials(selectedOrganization.name)
-            )} text-transparent bg-clip-text
-            `}
+              getInitials(organization.name)
+            )} text-transparent bg-clip-text`}
           >
-            {selectedOrganization.name}
+            {organization.name}
           </DialogTitle>
           <DialogDescription
             aria-description="Details about the organization"
             id="organization-details"
           >
-            Detailed information about {selectedOrganization.name} organization.
+            Detailed information about {organization.name} organization.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh]">
@@ -93,13 +94,11 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
               <div className="flex items-center space-x-4 mb-4">
                 <Building2 className="h-10 w-10 text-gray-500" />
                 <div>
-                  <h3 className="text-lg font-semibold">
-                    {selectedOrganization.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold">{organization.name}</h3>
                   <div className="text-sm text-muted-foreground flex items-center gap-1">
                     <AtSign className="h-4 w-4" aria-hidden="true" />
                     <span aria-label="Organization slug">
-                      {selectedOrganization.slug}
+                      {organization.slug}
                     </span>
                   </div>
                 </div>
@@ -114,7 +113,7 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                       <div className="flex items-center gap-2 text-sm cursor-help">
                         <Hash className="h-4 w-4" aria-hidden="true" />
                         <span aria-label="Organization ID">
-                          ID: {selectedOrganization._id}
+                          ID: {organization._id}
                         </span>
                       </div>
                     </TooltipTrigger>
@@ -128,7 +127,7 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                   <Users className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Number of members">Members: </span>
                   <Badge variant="secondary">
-                    {selectedOrganization.members.length}
+                    {organization.members.length}
                   </Badge>
                 </div>
 
@@ -139,11 +138,11 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="font-medium cursor-help">
-                          {selectedOrganization.owner.name}
+                          {organization.owner.name}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{selectedOrganization.owner.email}</p>
+                        <p>{organization.owner.email}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -152,14 +151,14 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Creation date">
-                    Created: {formatDate(selectedOrganization.createdAt)}
+                    Created: {formatDate(organization.createdAt)}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4" aria-hidden="true" />
                   <span aria-label="Last update date">
-                    Updated: {formatDate(selectedOrganization.updatedAt)}
+                    Updated: {formatDate(organization.updatedAt)}
                   </span>
                 </div>
               </div>
@@ -171,12 +170,12 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                   <AccordionTrigger>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      Members ({selectedOrganization.members.length})
+                      Members ({organization.members.length})
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4">
-                      {selectedOrganization.members.map((member) => (
+                      {organization.members.map((member) => (
                         <div
                           key={member._id}
                           className="flex items-center gap-3 border p-2.5 rounded-md"
@@ -184,10 +183,10 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                           <Avatar>
                             <AvatarFallback
                               className={`h-10 w-10 font-bold ${bgColorsByInitials(
-                                getInitials(member?.name || "")
+                                getInitials(member.name || "")
                               )}`}
                             >
-                              {getInitials(member?.name || "")}
+                              {getInitials(member.name || "")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -197,7 +196,7 @@ const OrganizationDetailDialog: React.FC<OrganizationDetailDialogProps> = ({
                               {member.email}
                             </p>
                           </div>
-                          {member._id === selectedOrganization.owner._id && (
+                          {member._id === organization.owner._id && (
                             <Badge variant="secondary" className="ml-auto">
                               Owner
                             </Badge>

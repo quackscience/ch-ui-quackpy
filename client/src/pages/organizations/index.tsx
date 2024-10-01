@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import useAppStore from "@/stores/appStore";
-import OrganizationList from "@/components/OrganizationList";
+import OrganizationList from "@/components/organizations/OrganizationList";
 import AddOrganizationDialog from "@/components/AddOrganizationDialog";
-import OrganizationDetailDialog from "@/components/OrganizationDetailDialog";
-import UpdateOrganizationDialog from "@/components/UpdateOrganizationDialog";
 import { Search, Plus, ArrowUpDown, Tally5, Info } from "lucide-react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,14 +17,11 @@ function OrganizationsPage() {
     fetchOrganizations,
     user,
     deleteOrganization,
-    setSelectedOrganization,
     orgIsLoading,
     orgError,
   } = useAppStore();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "memberCount">("name");
@@ -145,14 +140,6 @@ function OrganizationsPage() {
             <OrganizationList
               organizations={filteredOrganizations}
               userSelectedOrganization={userSelectedOrganization ?? null}
-              onViewDetails={(org: Organization) => {
-                setSelectedOrganization(org);
-                setIsDetailDialogOpen(true);
-              }}
-              onEdit={(org: Organization) => {
-                setSelectedOrganization(org);
-                setIsUpdateDialogOpen(true);
-              }}
               onDelete={(org: Organization) =>
                 handleDeleteOrganization(org._id)
               }
@@ -178,14 +165,6 @@ function OrganizationsPage() {
       <AddOrganizationDialog
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
-      />
-      <OrganizationDetailDialog
-        isOpen={isDetailDialogOpen}
-        onClose={() => setIsDetailDialogOpen(false)}
-      />
-      <UpdateOrganizationDialog
-        isOpen={isUpdateDialogOpen}
-        onClose={() => setIsUpdateDialogOpen(false)}
       />
 
       <InfoDialog

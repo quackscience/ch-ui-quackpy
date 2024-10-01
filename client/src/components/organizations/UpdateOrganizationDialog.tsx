@@ -1,5 +1,4 @@
-// src/components/UpdateOrganizationDialog.tsx
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,8 +19,8 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import useAppStore from "@/stores/appStore";
 import { toast } from "sonner";
+import { Organization } from "@/types/types";
 
 const formSchema = z.object({
   name: z.string().min(1, "Organization name is required"),
@@ -30,26 +29,35 @@ const formSchema = z.object({
 interface UpdateOrganizationDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  organization: Organization | null;
+  onUpdate: (id: string, name: string) => Promise<void>;
 }
 
 const UpdateOrganizationDialog: React.FC<UpdateOrganizationDialogProps> = ({
   isOpen,
   onClose,
+  organization,
+  onUpdate,
 }) => {
-  const { selectedOrganization, updateOrganization } = useAppStore();
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: selectedOrganization?.name || "",
+      name: organization?.name || "",
     },
   });
 
+  useEffect(() => {
+    if (organization) {
+      form.reset({ name: organization.name });
+    }
+  }, [organization, form]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (selectedOrganization) {
+    if (organization) {
       try {
-        await updateOrganization(selectedOrganization._id, values.name);
+        await onUpdate(organization._id, values.name);
         toast.success(`Organization ${values.name} updated successfully`);
+        onClose();
       } catch (error) {
         if (error instanceof Error) {
           toast.error(error.message);
@@ -57,17 +65,10 @@ const UpdateOrganizationDialog: React.FC<UpdateOrganizationDialogProps> = ({
           toast.error("Failed to update organization");
         }
       }
-      onClose();
     }
   };
 
-  useEffect(() => {
-    if (selectedOrganization) {
-      form.reset({ name: selectedOrganization.name });
-    }
-  }, [selectedOrganization, form]);
-
-  if (!selectedOrganization) return null;
+  if (!organization) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -91,6 +92,9 @@ const UpdateOrganizationDialog: React.FC<UpdateOrganizationDialogProps> = ({
               )}
             />
             <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
               <Button type="submit">Update Organization</Button>
             </DialogFooter>
           </form>

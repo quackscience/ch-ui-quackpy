@@ -37,8 +37,8 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
   } = useAppStore();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [tempOrgValue, setTempOrgValue] = useState("");
-  const [tempCredValue, setTempCredValue] = useState("");
+  const [tempOrgValue, setTempOrgValue] = useState<string>("");
+  const [tempCredValue, setTempCredValue] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchOrganizationsAndHandleErrors = useCallback(async () => {
@@ -46,6 +46,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
       await fetchOrganizations();
     } catch (error) {
       console.error("Failed to fetch organizations:", error);
+      toast.error("Failed to fetch organizations. Please try again.");
     }
   }, [fetchOrganizations]);
 
@@ -55,6 +56,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
         await fetchAvailableCredentials(organizationId);
       } catch (error) {
         console.error("Failed to fetch available credentials:", error);
+        toast.error("Failed to fetch available credentials. Please try again.");
       }
     },
     [fetchAvailableCredentials]
@@ -134,7 +136,6 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
   const noCredentialsAvailable =
     availableCredentials?.length === 0 && tempOrgValue !== "" && !credIsLoading;
 
-  // Determine if there are no organizations or no credentials
   const noOrganizations = organizations.length === 0;
   const noCredentialsForSelectedOrg = noCredentialsAvailable;
   const showGeneralAlert = noOrganizations || noCredentialsForSelectedOrg;
@@ -157,7 +158,7 @@ export function CombinedSelector({ isExpanded }: { isExpanded: boolean }) {
         )}
       </Button>
 
-      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Choose Organization and Credential</DialogTitle>

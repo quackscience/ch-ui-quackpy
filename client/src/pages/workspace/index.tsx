@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 function WorkspacePage() {
   const navigate = useNavigate();
-  const { user, error, resetTabs, isConnected, authError } = useAppStore();
+  const { user, userError, resetTabs, isConnected, authError } = useAppStore();
 
   const [activeOrgId, setActiveOrgId] = useState(user?.activeOrganization?._id);
   const [activeCredId, setActiveCredId] = useState(
@@ -27,13 +27,7 @@ function WorkspacePage() {
     const currentCredId = user?.activeClickhouseCredential?._id;
 
     if (currentOrgId !== activeOrgId || currentCredId !== activeCredId) {
-      console.log("Organization or credential changed. Reloading workspace...");
-      setActiveOrgId(currentOrgId);
-      setActiveCredId(currentCredId);
       resetTabs();
-      // Add any other reload logic here
-      // For example, you might want to refetch the database structure:
-      // fetchDatabaseStructure();
     }
   }, [user, activeOrgId, activeCredId, resetTabs]);
 
@@ -41,29 +35,22 @@ function WorkspacePage() {
     if (!user?.activeOrganization || !user?.activeClickhouseCredential) {
       return;
     }
-    if (!isConnected) {
-      navigate("/");
-      toast.error(
-        "The ClickHouse server is not connected. Please check your connection and try again."
-      );
-    }
+
     if (!user.activeOrganization || !user.activeClickhouseCredential) {
       navigate("/organizations");
       toast.warning(
         "You need to have a Selected Organization and Selected Credential to access the workspace"
       );
     }
-    // Initial check
-    handleOrgCredChange();
   }, [handleOrgCredChange, isConnected, navigate, user]);
 
   useEffect(() => {
-    if (authError) {
+    if (userError) {
       toast.error(`Authentication error: ${authError}`);
     }
   }, [authError]);
 
-  if (error) {
+  if (userError) {
     return (
       <section className="flex items-center justify-center h-screen">
         <div className="w-full max-w-md p-6 space-y-6">
@@ -95,7 +82,7 @@ function WorkspacePage() {
           <details className="text-xs text-gray-500 dark:text-gray-400">
             <summary className="cursor-pointer">Error Details</summary>
             <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-x-auto">
-              {error}
+              {authError}
             </pre>
           </details>
         </div>

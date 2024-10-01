@@ -8,11 +8,120 @@ const useAppStore = create<AppState>()(
   devtools(
     persist(
       (set, get) => ({
-        // Auth State
+        // User State
         user: null,
-        allUsers: [],
+        userIsLoading: false,
+        userError: null,
+        allUsers: null,
+
+        getCurrentUser: async () => {
+          set({ userIsLoading: true, userError: null });
+          try {
+            const response = await api.get("/users/me");
+            set({ user: response.data, userIsLoading: false });
+          } catch (error: any) {
+            set({ user: null, userIsLoading: false, userError: error.message });
+            throw error;
+          }
+        },
+
+        admin: () => get().user?.role === "admin",
+
+        updateUser: async (userData: Partial<AppState>) => {
+          set({ userIsLoading: true, userError: null });
+          try {
+            const response = await api.put(`/users/me`, userData);
+            set({ user: response.data, userIsLoading: false });
+          } catch (error) {
+            set({ userError: "Failed to update user", userIsLoading: false });
+            throw error;
+          }
+        },
+
+        getAllUsers: async () => {
+          set({ userIsLoading: true, userError: null });
+          try {
+            const response = await api.get("/users");
+            set({ allUsers: response.data, userIsLoading: false });
+          } catch (error) {
+            set({ userError: "Failed to get users", userIsLoading: false });
+            throw error;
+          }
+        },
+
+        setCurrentOrganization: async (organizationId) => {
+          set({ userIsLoading: true, userError: null });
+          try {
+            const response = await api.post("/users/me/organization", {
+              organizationId,
+            });
+            set((state) => {
+              const user = state.user;
+              if (user) {
+                return {
+                  ...state,
+                  user: {
+                    ...user,
+                    activeOrganization: response.data.organization,
+                  },
+                  userIsLoading: false,
+                };
+              } else {
+                return {
+                  ...state,
+                  userIsLoading: false,
+                  userError: "User not logged in",
+                };
+              }
+            });
+          } catch (error) {
+            set({
+              userError: "Failed to set organization",
+              userIsLoading: false,
+            });
+            throw error;
+          }
+        },
+
+        setCurrentCredential: async (credentialId) => {
+          set({ userIsLoading: true, userError: null });
+          try {
+            const response = await api.post("/users/me/credential", {
+              credentialId,
+            });
+            set((state) => {
+              const user = state.user;
+              if (user) {
+                return {
+                  ...state,
+                  user: {
+                    ...user,
+                    activeClickhouseCredential:
+                      response.data.credential,
+                  },
+                  userIsLoading: false,
+                };
+              } else {
+                return {
+                  ...state,
+                  userIsLoading: false,
+                  userError: "User not logged in",
+                };
+              }
+            });
+          } catch (error) {
+            set({
+              userError: "Failed to set current credential",
+              userIsLoading: false,
+            });
+            throw error;
+          }
+        },
+
+        // Auth State
         authIsLoading: false,
         authError: null,
+
         login: async (email, password) => {
           set({ authIsLoading: true, authError: null });
           try {
@@ -43,16 +152,7 @@ const useAppStore = create<AppState>()(
             throw error;
           }
         },
-        getCurrentUser: async () => {
-          set({ authIsLoading: true, authError: null });
-          try {
-            const response = await api.get("/users/me");
-            set({ user: response.data, authIsLoading: false });
-          } catch (error) {
-            set({ user: null, authIsLoading: false });
-            throw error;
-          }
-        },
+
         checkAuth: async () => {
           try {
             await get().getCurrentUser();
@@ -61,74 +161,9 @@ const useAppStore = create<AppState>()(
             return false;
           }
         },
-        admin: () => get().user?.role === "admin",
-        updateUser: async (userId, userData) => {
-          set({ authIsLoading: true, authError: null });
-          try {
-            const response = await api.put(`/users/me`, {
-              userId,
-              ...userData,
-            });
-            set({ user: response.data, authIsLoading: false });
-          } catch (error) {
-            set({ authError: "Failed to update user", authIsLoading: false });
-            throw error;
-          }
-        },
-        getAllUsers: async () => {
-          set({ authIsLoading: true, authError: null });
-          try {
-            const response = await api.get("/users");
-            set({ allUsers: response.data, authIsLoading: false });
-          } catch (error) {
-            set({ authError: "Failed to get users", authIsLoading: false });
-            throw error;
-          }
-        },
-        setCurrentOrganization: async (organizationId) => {
-          set({ authIsLoading: true, authError: null });
-          try {
-            await api.post("/users/me/organization", { organizationId });
-            await get().getCurrentUser();
-            await api.post("/users/me/credential", { credentialId: "" });
-            get().resetCredentials();
-            await get().fetchAvailableCredentials(organizationId);
-          } catch (error) {
-            set({
-              authError: "Failed to set current organization",
-              authIsLoading: false,
-            });
-            throw error;
-          }
-        },
-        setCurrentCredential: async (credentialId) => {
-          set({ authIsLoading: true, authError: null });
-          try {
-            const response = await api.post("/users/me/credential", {
-              credentialId,
-            });
-            set((state) => ({
-              user: state.user
-                ? {
-                    ...state.user,
-                    activeClickhouseCredential:
-                      response.data.activeClickhouseCredential,
-                  }
-                : null,
-              authIsLoading: false,
-            }));
-          } catch (error) {
-            set({
-              authError: "Failed to set current credential",
-              authIsLoading: false,
-            });
-            throw error;
-          }
-        },
 
         // Organization State
         organizations: [],
-        selectedOrganization: null,
         orgIsLoading: false,
         orgError: null,
         fetchOrganizations: async () => {
@@ -144,7 +179,7 @@ const useAppStore = create<AppState>()(
             throw error;
           }
         },
-        addOrganization: async (name) => {
+        createOrganization: async (name) => {
           set({ orgIsLoading: true, orgError: null });
           try {
             await api.post("/organizations", { name });
@@ -185,7 +220,7 @@ const useAppStore = create<AppState>()(
             throw error;
           }
         },
-        addUserToOrganization: async (organizationId, userId) => {
+        addUserToOrganization: async (organizationId, userId: string) => {
           set({ orgIsLoading: true, orgError: null });
           try {
             await api.post(`/organizations/${organizationId}/members`, {
@@ -218,7 +253,6 @@ const useAppStore = create<AppState>()(
 
         // ClickHouse Credential State
         credentials: [],
-        selectedCredential: null,
         availableCredentials: [],
         credIsLoading: false,
         credError: null,
@@ -358,10 +392,10 @@ const useAppStore = create<AppState>()(
             throw error;
           }
         },
+
         resetCredentials: () => {
           set({
             availableCredentials: [],
-            selectedCredential: null,
             credError: null,
           });
         },
@@ -426,27 +460,22 @@ const useAppStore = create<AppState>()(
             return { tabs: newTabs };
           });
         },
+
         getTabById: (id) => get().tabs.find((tab) => tab.id === id),
-        fetchQueries: async () => {
-          set({ tabIsLoading: true, tabError: null });
-          try {
-            const response = await api.get("/ch-queries");
-            console.log("Fetched queries:", response.data);
-          } catch (error) {
-            set({ tabError: "Failed to fetch queries" });
-          } finally {
-            set({ tabIsLoading: false });
+
+        runQuery: async (query: string, tabId?: string): Promise<void> => {
+          if (tabId) {
+            set((state) => ({
+              tabs: state.tabs.map((tab) =>
+                tab.id === tabId
+                  ? { ...tab, isLoading: true, error: null }
+                  : tab
+              ),
+            }));
           }
-        },
-        runQuery: async (tabId, query) => {
-          set((state) => ({
-            tabs: state.tabs.map((tab) =>
-              tab.id === tabId ? { ...tab, isLoading: true, error: null } : tab
-            ),
-          }));
           try {
             const response = await api.post("/query", { query });
-            if (tabId !== "") {
+            if (tabId) {
               set((state) => ({
                 tabs: state.tabs.map((tab) =>
                   tab.id === tabId
@@ -454,24 +483,27 @@ const useAppStore = create<AppState>()(
                     : tab
                 ),
               }));
-            } else {
-              return response.data;
             }
+            // handle success without returning
           } catch (error: any) {
-            set((state) => ({
-              tabs: state.tabs.map((tab) =>
-                tab.id === tabId
-                  ? {
-                      ...tab,
-                      error:
-                        error.response?.data?.message || "An error occurred",
-                      isLoading: false,
-                    }
-                  : tab
-              ),
-            }));
+            const errorMessage =
+              error.response?.data?.message || "An error occurred";
+            if (tabId) {
+              set((state) => ({
+                tabs: state.tabs.map((tab) =>
+                  tab.id === tabId
+                    ? {
+                        ...tab,
+                        error: errorMessage,
+                        isLoading: false,
+                      }
+                    : tab
+                ),
+              }));
+            }
           }
         },
+
         fetchDatabaseData: async () => {
           set({ isLoadingDatabase: true, tabError: null });
           try {
@@ -524,6 +556,7 @@ const useAppStore = create<AppState>()(
         instanceVersion: "",
         lastChecked: null,
         checkConnection: async () => {
+          set({ isConnected: false, instanceVersion: "", lastChecked: null });
           try {
             const response = await api.get("/ch-queries/health");
             set({
@@ -544,8 +577,6 @@ const useAppStore = create<AppState>()(
         name: "app-storage",
         partialize: (state) => ({
           user: state.user,
-          selectedOrganization: state.selectedOrganization,
-          selectedCredential: state.selectedCredential,
           tabs: state.tabs,
           activeTabId: state.activeTabId,
         }),

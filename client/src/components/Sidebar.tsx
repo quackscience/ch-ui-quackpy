@@ -26,7 +26,7 @@ import {
 
 import Logo from "/logo.png";
 import useAppStore from "@/stores/appStore";
-import OrganizationCredentialSelector from "@/components/OrganizationCredentialSelector";
+import OrganizationCredentialSelector from "@/components/organizations/OrganizationCredentialSelector";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getInitials, bgColorsByInitials } from "@/lib/helpers";

@@ -82,7 +82,7 @@ const SQLEditor: React.FC<SQLEditorProps> = ({ tabId }) => {
           content
         );
 
-      runQuery(tabId, content).then(() => {
+      runQuery(content, tabId).then(() => {
         if (shouldRefresh) {
           fetchDatabaseData();
           toast.success("Data Explorer refreshed due to schema change");

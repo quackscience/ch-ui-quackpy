@@ -248,7 +248,7 @@ exports.setCurrentOrganizationForUser = [
       await user.save();
       res.json({
         message: `${organization.name} is now set as current organization`,
-        organizationId: organization._id,
+        organization: organization,
       });
     } catch (error) {
       console.error("setCurrentOrganizationForUser error:", error);
@@ -347,9 +347,9 @@ exports.setCurrentCredentialsForUser = [
         });
       }
 
-      const credentials = await ClickHouseCredential.findById(credentialId);
+      const credential = await ClickHouseCredential.findById(credentialId);
 
-      if (!credentials) {
+      if (!credential) {
         return errorResponse(
           res,
           404,
@@ -359,7 +359,7 @@ exports.setCurrentCredentialsForUser = [
         );
       }
 
-      if (!credentials.users.includes(user._id)) {
+      if (!credential.users.includes(user._id)) {
         return errorResponse(
           res,
           403,
@@ -369,11 +369,9 @@ exports.setCurrentCredentialsForUser = [
         );
       }
 
-      user.activeClickhouseCredential = credentialId;
       await user.save();
       res.json({
-        message: "Credentials are now set as current credentials",
-        credentialId: credentials._id,
+        credential,
       });
     } catch (error) {
       console.error("setCurrentCredentialsForUser error:", error);

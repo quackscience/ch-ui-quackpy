@@ -16,16 +16,16 @@ function MetricsOverview() {
   const [isLocalHostInstance, setIsLocalHostInstance] = React.useState(false);
 
   useEffect(() => {
-    if (!isConnected) {
-      toast.error(
-        "The ClickHouse server is not connected. Please check your connection and try again."
-      );
-      navigate("/");
-    }
+    // if (!isConnected) {
+    //   toast.error(
+    //     "The ClickHouse server is not connected. Please check your connection and try again."
+    //   );
+    //   navigate("/");
+    // }
 
     if (!activeCredential) {
       toast.error("No active credential found");
-      navigate("/credentials");
+      //navigate("/credentials");
     }
 
     if (

@@ -151,7 +151,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     );
     setConfirmAction(() => async () => {
       try {
-        await runQuery("", `DROP DATABASE ${database}`);
+        await runQuery(`DROP DATABASE ${database}`);
         toast.success(`Dropped database ${database}`);
         refreshData();
       } catch (error) {
@@ -168,7 +168,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     );
     setConfirmAction(() => async () => {
       try {
-        await runQuery("", `DROP TABLE ${database}.${table}`);
+        await runQuery(`DROP TABLE ${database}.${table}`);
         toast.success(`Dropped table ${table}`);
         refreshData();
       } catch (error) {
