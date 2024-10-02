@@ -8,6 +8,7 @@ import {
 import useAppStore from "@/stores/appStore";
 import CHUITable from "../CHUITable";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface SqlTabProps {
   tabId: string;
@@ -27,58 +28,60 @@ interface QueryResults {
 }
 
 const SqlTab: React.FC<SqlTabProps> = ({ tabId }) => {
-  const { getTabById } = useAppStore();
+  const { getTabById, runQuery, fetchDatabaseData } = useAppStore();
   const tab = getTabById(tabId);
-  const [timer, setTimer] = useState<number>(0); // Timer state in seconds
-  const [isRunning, setIsRunning] = useState<boolean>(false); // To track the timer state
+  const [timer, setTimer] = useState<number>(0);
 
-  if (!tab) return null;
+  const [results, setResults] = useState<QueryResults | null>(null);
 
-  const results: QueryResults | undefined =
-    tab.results as unknown as QueryResults;
 
-  // Effect to handle timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
 
-    if (tab.isLoading) {
-      setTimer(0); // Reset the timer when loading starts
-      setIsRunning(true);
-      interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer + 0.1); // Increment timer every 100ms
-      }, 100);
-    } else {
-      setIsRunning(false); // Stop the timer when loading ends
-      if (interval) clearInterval(interval);
+  const handleRunQuery = async (query: string) => {
+    try {
+      const shouldRefresh =
+        /^\s*(CREATE|DROP|ALTER|TRUNCATE|RENAME|INSERT|UPDATE|DELETE)\s+/i.test(
+          query
+        );
+
+      const queryResults = await runQuery(query, tabId);
+
+      if (queryResults !== undefined && queryResults !== null) {
+        setResults(queryResults);
+
+        if (shouldRefresh) {
+          await fetchDatabaseData();
+          toast.success("Data Explorer refreshed due to schema change");
+        }
+      }
+    } catch (error) {
+      console.error("Error running query:", error);
+      toast.error(
+        "Failed to execute query. Please check the console for more details."
+      );
+      // The error is already set in the tab state by the runQuery function
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [tab.isLoading]);
+  };
 
   const renderResults = () => {
-    if (tab.isLoading) {
+    if (tab?.isLoading) {
       return (
         <div className="h-full w-full flex items-center justify-center">
           <div className="flex items-center justify-center h-full space-x-4">
             <Loader2 size={24} className="animate-spin" />
             <p>Running query</p>
-            <p>{timer.toFixed(1)}s</p> {/* Display the timer here */}
+            <p>{timer.toFixed(1)}s</p>
           </div>
         </div>
       );
     }
 
-    if (tab.error) {
+    if (tab?.error) {
       return (
-        <>
-          <div className="overflow-auto text-sm p-2">
-            <div className="p-4 border text-xs rounded-md text-red-600 bg-red-300/10 border-red-500">
-              {tab.error}
-            </div>
+        <div className="overflow-auto text-sm p-2">
+          <div className="p-4 border text-xs rounded-md text-red-600 bg-red-300/10 border-red-500">
+            {tab.error}
           </div>
-        </>
+        </div>
       );
     }
 
@@ -90,7 +93,6 @@ const SqlTab: React.FC<SqlTabProps> = ({ tabId }) => {
       );
     }
 
-    // Prepare the result object for CHUITable
     const tableResult = {
       meta: results.meta,
       data: results.data,
@@ -106,11 +108,13 @@ const SqlTab: React.FC<SqlTabProps> = ({ tabId }) => {
     );
   };
 
+  if (!tab) return null;
+
   return (
     <div className="h-screen">
       <ResizablePanelGroup direction="vertical">
         <ResizablePanel defaultSize={50} minSize={0}>
-          <SQLEditor tabId={tabId} />
+          <SQLEditor tabId={tabId} onRunQuery={handleRunQuery} />
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={0}>

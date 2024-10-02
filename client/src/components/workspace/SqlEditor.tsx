@@ -23,11 +23,11 @@ import { toast } from "sonner";
 
 interface SQLEditorProps {
   tabId: string;
+  onRunQuery: (query: string) => void;
 }
 
-const SQLEditor: React.FC<SQLEditorProps> = ({ tabId }) => {
-  const { runQuery, getTabById, updateTabContent, fetchDatabaseData } =
-    useAppStore();
+const SQLEditor: React.FC<SQLEditorProps> = ({ tabId, onRunQuery }) => {
+  const { getTabById, updateTabContent } = useAppStore();
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const tab = getTabById(tabId);
@@ -75,21 +75,9 @@ const SQLEditor: React.FC<SQLEditorProps> = ({ tabId }) => {
   const handleRunQuery = useCallback(() => {
     if (monacoRef.current) {
       const content = getSelectedText() || monacoRef.current.getValue();
-
-      // Check if the query should trigger a refresh
-      const shouldRefresh =
-        /^\s*(CREATE|DROP|ALTER|TRUNCATE|RENAME|INSERT|UPDATE|DELETE)\s+/i.test(
-          content
-        );
-
-      runQuery(content, tabId).then(() => {
-        if (shouldRefresh) {
-          fetchDatabaseData();
-          toast.success("Data Explorer refreshed due to schema change");
-        }
-      });
+      onRunQuery(content);
     }
-  }, [tabId, runQuery, fetchDatabaseData]);
+  }, [tabId, onRunQuery]);
 
   const getSelectedText = () => {
     if (monacoRef.current) {

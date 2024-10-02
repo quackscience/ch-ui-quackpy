@@ -50,7 +50,6 @@ export interface Tab {
   title: string;
   content: string | { query: string; database: string; table: string };
   type: TabType;
-  results?: any[];
   error?: string | null;
   isLoading?: boolean;
   isSaved?: boolean;

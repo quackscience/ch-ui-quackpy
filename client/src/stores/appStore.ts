@@ -462,7 +462,7 @@ const useAppStore = create<AppState>()(
 
         getTabById: (id) => get().tabs.find((tab) => tab.id === id),
 
-        runQuery: async (query: string, tabId?: string): Promise<void> => {
+        runQuery: async (query: string, tabId?: string): Promise<any> => {
           if (tabId) {
             set((state) => ({
               tabs: state.tabs.map((tab) =>
@@ -477,13 +477,11 @@ const useAppStore = create<AppState>()(
             if (tabId) {
               set((state) => ({
                 tabs: state.tabs.map((tab) =>
-                  tab.id === tabId
-                    ? { ...tab, results: response.data, isLoading: false }
-                    : tab
+                  tab.id === tabId ? { ...tab, isLoading: false } : tab
                 ),
               }));
             }
-            // handle success without returning
+            return response.data; // Return the results instead of storing them
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.message || "An error occurred";
@@ -500,6 +498,7 @@ const useAppStore = create<AppState>()(
                 ),
               }));
             }
+            throw error;
           }
         },
 
