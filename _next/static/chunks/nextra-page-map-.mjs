@@ -105,6 +105,12 @@ export const pageMap = [{
     frontMatter: {
       "sidebarTitle": "License"
     }
+  }, {
+    name: "security",
+    route: "/docs/security",
+    frontMatter: {
+      "sidebarTitle": "Security"
+    }
   }]
 }, {
   name: "index",
