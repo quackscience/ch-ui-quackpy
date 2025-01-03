@@ -35,23 +35,23 @@ const resourceCards = [
   {
     title: "Star us on GitHub!",
     description: "Support our project by starring it on GitHub.",
-    link: "https://github.com/caioricciuti/ch-ui",
+    link: "https://github.com/quackscience/duck-ui",
     Icon: Github,
     action: "Star on GitHub",
   },
   {
-    title: "ClickHouse Docs",
-    description: "Explore ClickHouse documentation and learn more.",
+    title: "DuckDB Docs",
+    description: "Explore DuckDB documentation and learn more.",
     Icon: BookOpen,
-    link: "https://clickhouse.com/docs/en/intro",
-    action: "Read Docs",
+    link: "https://duckdb.org/docs/",
+    action: "Quack Docs",
   },
   {
-    title: "CH-UI Documentation",
+    title: "Quackscience",
     Icon: ExternalLink,
-    description: "Learn how to make the most of CH-UI.",
-    link: "https://ch-ui.caioricciuti.com",
-    action: "Explore CH-UI",
+    description: "Discover all Quackscience projects",
+    link: "https://quacks.cc",
+    action: "Quackscience",
   },
 ];
 

@@ -132,13 +132,13 @@ const Sidebar = () => {
   const bottomNavLinks = [
     { to: "/settings", label: "Settings", icon: CogIcon, isNewWindow: false },
     {
-      to: "https://github.com/caioricciuti/ch-ui?utm_source=ch-ui&utm_medium=sidebar",
+      to: "https://github.com/quackscience",
       label: "GitHub",
       icon: Github,
       isNewWindow: true,
     },
     {
-      to: "https://ch-ui.caioricciuti.com/docs?utm_source=ch-ui&utm_medium=sidebar",
+      to: "https://duckdb.org/docs",
       label: "Documentation",
       icon: BookText,
       isNewWindow: true,
